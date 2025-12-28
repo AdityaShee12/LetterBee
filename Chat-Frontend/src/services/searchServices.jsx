@@ -189,7 +189,7 @@ const Search = () => {
   return (
     <div className={`${selectedUser ? "lg:block hidden" : "visible"}`}>
       {/* Searchbar */}
-      <div className="relative flex justify-center mt-[1.2rem] ml-[0.9rem] mr-[0.9rem]">
+      <div className="relative flex justify-center mt-[3.9rem] ml-[0.9rem] mr-[0.9rem]">
         <AiOutlineSearch
           size={21}
           className="absolute left-[1rem] top-[0.6rem] text-slate-600"
@@ -202,7 +202,7 @@ const Search = () => {
             setQuery(e.target.value);
             fetchUsers(e.target.value);
           }}
-          className="placeholder-slate-400 pl-[3rem] text-[1rem] w-full h-[2.3rem] border-2 rounded-3xl"
+          className="placeholder-slate-400 pl-[3rem] text-[1rem] w-full h-[2.3rem] border-2 rounded-3xl outline-none"
         />
       </div>
       {/* Searching list */}

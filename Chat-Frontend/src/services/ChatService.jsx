@@ -803,7 +803,6 @@ const ChatPage = () => {
     };
   }, []);
 
-
   const sendRequest = () => {
     const identifier = uuidv4();
     socket.emit("sendRequest", {
@@ -875,7 +874,7 @@ const ChatPage = () => {
       console.log("Reject");
     }
   };
-  
+
   useEffect(() => {
     // Code for accept or reject reply
     socket.on("requestReply", (accept) => {
@@ -906,10 +905,10 @@ const ChatPage = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem]">
+    <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem] ">
       {/* profile */}
       <div
-        className="flex justify-between items-center w-full rounded-lg bg-gray-200 h-[4rem] cursor-pointer"
+        className="flex justify-between items-center w-full rounded-lg h-[4rem] cursor-pointer"
         onClick={(e) => openProfileContext(e)}>
         {/* profile pic, name and state */}
         <div className="flex items-center gap-4">
@@ -929,15 +928,15 @@ const ChatPage = () => {
           <AiOutlineVideoCamera
             size={27}
             className="mr-[0.5rem]"
-            onClick={videoCallSystem}
+            onClick={()=>alert("Video call feature will be available within one week")}
           />
         </div>
       </div>
       {profileDetails && (
         <div
           ref={profileRef}
-          className={`absolute z-10 w-[30rem] h-[29rem] rounded-lg shadow-md bg-slate-200 mt-[4rem]`}>
-          <div className="flex h-full">
+          className={`absolute z-10 w-[30rem] h-[29rem] shadow-md mt-[4rem]`}>
+          <div className="flex h-full *:rounded-sm">
             {/* left side */}
             <div className="flex flex-col pt-3 pl-5 gap-4 bg-slate-300 w-[8rem] ">
               <div onClick={(e) => overview(e)} className="cursor-pointer">
@@ -957,7 +956,7 @@ const ChatPage = () => {
               </div>
             </div>
             {/* right side */}
-            <div>
+            <div className="bg-slate-100">
               {activeSection === "profile" && (
                 <div>
                   <div className="flex flex-col items-center p-4 rounded-lg overflow-hidden">
@@ -1094,263 +1093,299 @@ const ChatPage = () => {
         </div>
       )}
       {/* Message section */}
-      <div className="flex flex-col w-full">
-        {/* Showing Message */}
-        <div
-          ref={chatContainerRef}
-          className="lg:h-[73vh] h-[78.5vh] overflow-y-auto p-4 ">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex w-full ${
-                msg.sender === "You" ? "justify-end" : "justify-start"
-              }`}>
-              <div
-                className={`relative flex flex-col ${
-                  msg.sender === "You" ? "items-end" : "items-start"
-                }`}
-                onContextMenu={(e) => openContextMenu(msg, e)}
-                style={{ width: "fit-content", maxWidth: "60%" }}>
-                {msg.fileURL ? (
-                  msg.fileType?.startsWith("image/") ? (
-                    <img
-                      src={msg.fileURL}
-                      alt="Sent Image"
-                      className="w-40 h-40 object-cover rounded-lg"
-                      onClick={() => setSelectedImage(msg.fileURL)}
-                    />
-                  ) : msg.fileType?.startsWith("video/") ? (
-                    <video
-                      src={msg.fileURL}
-                      controls
-                      className="w-60 rounded-lg"
-                    />
-                  ) : (
-                    <a
-                      href={msg.fileURL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-black text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words block">
-                      📄 {msg.fileName}
-                    </a>
-                  )
-                ) : null}
-                {msg.message && (
-                  <div
-                    className="font-mono bg-black text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words whitespace-pre-line mt-2 block"
-                    style={{
-                      wordBreak: "break-word",
-                      minWidth: "80px",
-                      maxWidth: "100%",
-                      whiteSpace: "pre-line",
-                    }}>
-                    {msg.message}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Context Menu */}
-        {contextMenu.show && (
+      <div
+        className="w-full h-screen bg-cover bg-center"
+        style={{ backgroundImage: "url(/dtheme.png)" }}>
+        <div className="flex flex-col w-full">
+          {/* Showing Message */}
           <div
-            ref={contextRef}
-            className="absolute rounded-lg shadow-lg bg-slate-100 text-black"
-            style={{
-              left: contextMenu.x,
-              top: contextMenu.y,
-              position: "absolute",
-              zIndex: 10,
-            }}>
-            <div className="flex flex-col w-44 rounded-lg overflow-hidden">
+            ref={chatContainerRef}
+            className="lg:h-[79vh] h-[78.5vh] overflow-y-auto p-4">
+            {messages.map((msg, index) => (
               <div
-                className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2"
-                onClick={() => {
-                  copyFunction();
-                }}>
-                <FiCopy size={16} />
-                <span>Copy</span>
+                key={index}
+                className={`flex w-full ${
+                  msg.sender === "You" ? "justify-end" : "justify-start"
+                }`}>
+                <div
+                  className={`relative flex flex-col ${
+                    msg.sender === "You" ? "items-end" : "items-start"
+                  }`}
+                  onContextMenu={(e) => openContextMenu(msg, e)}
+                  style={{ width: "fit-content", maxWidth: "60%" }}>
+                  {msg.fileURL ? (
+                    msg.fileType?.startsWith("image/") ? (
+                      <img
+                        src={msg.fileURL}
+                        alt="Sent Image"
+                        className="w-40 h-40 object-cover rounded-lg"
+                        onClick={() => setSelectedImage(msg.fileURL)}
+                      />
+                    ) : msg.fileType?.startsWith("video/") ? (
+                      <video
+                        src={msg.fileURL}
+                        controls
+                        className="w-60 rounded-lg"
+                      />
+                    ) : (
+                      <a
+                        href={msg.fileURL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#4337e6] text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words block">
+                        📄 {msg.fileName}
+                      </a>
+                    )
+                  ) : null}
+                  {msg.message && (
+                    <div
+                      className={`font-mono bg-[#4337e6] text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words whitespace-pre-line mt-2 block ${
+                        msg.sender === "You" ? "bg-[#4337e6]" : "bg-yellow-700"
+                      }`}
+                      style={{
+                        wordBreak: "break-word",
+                        minWidth: "80px",
+                        maxWidth: "100%",
+                        whiteSpace: "pre-line",
+                      }}>
+                      {msg.message}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2">
-                <FiStar size={16} />
-                <span>Star</span>
-              </div>
-              <div
-                className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2"
-                onClick={() => {
-                  deleteFunction();
-                }}>
-                <FiTrash2 size={16} />
-                <span>Delete</span>
+            ))}
+          </div>
+          {/* Context Menu */}
+          {contextMenu.show && (
+            <div
+              ref={contextRef}
+              className="absolute rounded-lg shadow-lg bg-slate-100 text-black"
+              style={{
+                left: contextMenu.x,
+                top: contextMenu.y,
+                position: "absolute",
+                zIndex: 10,
+              }}>
+              <div className="flex flex-col w-44 rounded-lg overflow-hidden">
+                <div
+                  className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2"
+                  onClick={() => {
+                    copyFunction();
+                  }}>
+                  <FiCopy size={16} />
+                  <span>Copy</span>
+                </div>
+                <div className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2">
+                  <FiStar size={16} />
+                  <span>Star</span>
+                </div>
+                <div
+                  className="cursor-pointer p-2 hover:bg-slate-200 flex items-center gap-2"
+                  onClick={() => {
+                    deleteFunction();
+                  }}>
+                  <FiTrash2 size={16} />
+                  <span>Delete</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        {/* Delete Confirmation */}
-        {delFunc && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg p-4 w-64">
-              <p className="text-center mb-3 text-gray-800">
-                Delete this message?
-              </p>
-              {everyone ? (
-                <>
-                  <button
-                    className="w-full py-2 text-red-600 hover:bg-gray-200 rounded"
-                    onClick={() => Delete("You")}>
-                    Delete for everyone
-                  </button>
+          )}
+          {/* Delete Confirmation */}
+          {delFunc && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white rounded-lg p-4 w-64">
+                <p className="text-center mb-3 text-gray-800">
+                  Delete this message?
+                </p>
+                {everyone ? (
+                  <>
+                    <button
+                      className="w-full py-2 text-red-600 hover:bg-gray-200 rounded"
+                      onClick={() => Delete("You")}>
+                      Delete for everyone
+                    </button>
+                    <button
+                      className="w-full py-2 text-gray-800 hover:bg-gray-200 rounded"
+                      onClick={() => Delete("Me")}>
+                      Delete for me
+                    </button>
+                  </>
+                ) : (
                   <button
                     className="w-full py-2 text-gray-800 hover:bg-gray-200 rounded"
-                    onClick={() => Delete("Me")}>
-                    Delete for me
+                    onClick={() => Delete("Me1")}>
+                    Delete for me{" "}
                   </button>
-                </>
-              ) : (
+                )}
                 <button
-                  className="w-full py-2 text-gray-800 hover:bg-gray-200 rounded"
-                  onClick={() => Delete("Me1")}>
-                  Delete for me{" "}
+                  className="w-full py-2 text-gray-500 hover:bg-gray-200 rounded mt-2"
+                  onClick={() => setDelFunc(false)}>
+                  Cancel
                 </button>
-              )}
+              </div>
+            </div>
+          )}
+          {/* Full Image Preview */}
+          {selectedImage && (
+            <div
+              className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80"
+              onClick={() => setSelectedImage(null)}>
+              <img
+                src={selectedImage}
+                alt="Full Size"
+                className="max-w-full max-h-full"
+              />
+            </div>
+          )}
+          {/* Footer */}
+          {/* No friend */}
+          {requestState === "noFriend" && (
+            <div className="flex flex-col items-center gap-[0.7rem]">
+              <div className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+                If you want chatting with {receiverName} then first you need to
+                send request
+              </div>
               <button
-                className="w-full py-2 text-gray-500 hover:bg-gray-200 rounded mt-2"
-                onClick={() => setDelFunc(false)}>
-                Cancel
+                onClick={sendRequest}
+                className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                Send Request
               </button>
             </div>
-          </div>
-        )}
-        {/* Full Image Preview */}
-        {selectedImage && (
-          <div
-            className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80"
-            onClick={() => setSelectedImage(null)}>
-            <img
-              src={selectedImage}
-              alt="Full Size"
-              className="max-w-full max-h-full"
-            />
-          </div>
-        )}
-        {/* Footer */}
-        {/* No friend */}
-        {requestState === "noFriend" && (
-          <div>
-            If you want chatting with {receiverName} then first you need to send
-            request
-            <button onClick={sendRequest}>Send Request</button>
-          </div>
-        )}{" "}
-        {/* Sending request */}
-        {requestState === "sent" && (
-          <div>
-            {messages.map((msg, index) =>
-              msg.sender === "You" ? (
-                <div key={index}>You sent friendrequest to {receiverName}</div>
-              ) : (
-                <div key={index}>
-                  <div>{receiverName} sent friendrequest to you</div>
-                  <div className="flex px-5 py-3 text-4xl">
-                    <button
-                      onClick={() => {
-                        const accept = 1;
-                        replyRequest(accept);
-                      }}>
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => {
-                        const accept = 0;
-                        replyRequest(accept);
-                      }}>
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        )}
-        {/* Rejection code */}
-        {requestState === "reject" && (
-          <div>
-            {messages.map((msg, index) => {
-              {
+          )}{" "}
+          {/* Sending request */}
+          {requestState === "sent" && (
+            <div>
+              {messages.map((msg, index) =>
                 msg.sender === "You" ? (
-                  <div>
+                  <div className="flex justify-center">
                     {" "}
-                    <div>You rejected friendrequest of {receiverName}</div>
-                    <div>
-                      If you want chatting with {receiverName} then first you
-                      need to send request
-                      <button onClick={sendRequest}>Send Request</button>
+                    <div
+                      key={index}
+                      className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+                      You sent friend request to {receiverName}
                     </div>
                   </div>
                 ) : (
-                  <div>{receiverName} rejected your friendrequest</div>
-                );
-              }
-            })}
-          </div>
-        )}
-        {/* Friend */}
-        {/* Type bar for sending sms*/}
-        {requestState === "friend" && (
-          <div className="relative flex items-center h-[4rem]">
-            {file && (
-              <div className="flex items-center p-2 bg-gray-100 rounded-lg mb-2">
-                <img
-                  src={filePreview}
-                  alt="Preview"
-                  className="w-12 h-12 object-cover rounded-lg"
-                />
-                <span className="truncate">{file.name}</span>
-                <button
-                  onClick={() => {
-                    setFile(null);
-                    setFilePreview(null);
-                  }}
-                  className="ml-2">
-                  <FiX size={20} className="text-gray-600 hover:text-red-500" />
-                </button>
-              </div>
-            )}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute pl-[0.7rem] rounded-full hover:bg-gray-200 transition">
-              <FiPaperclip size={20} />
-            </button>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <textarea
-              ref={messageInputRef}
-              value={message}
-              onChange={handleChange}
-              placeholder="Type a message..."
-              className="bg-slate-200 w-full h-[3.5rem] leading-[3.5rem] rounded-3xl pl-[2.7rem] text-[1.3rem] "
-              rows={1}
-              style={{ minHeight: "40px" }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
+                  <div
+                    key={index}
+                    className="flex flex-col items-center gap-[0.7rem]">
+                    <div className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+                      {receiverName} sent friend request to you
+                    </div>
+                    <div className="flex gap-[3rem] px-5 py-3 text-4xl">
+                      <button
+                        onClick={() => {
+                          const accept = 1;
+                          replyRequest(accept);
+                        }}
+                        className="bg-[#4337e6] text-white w-[8rem] h-[3rem] rounded-md">
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => {
+                          const accept = 0;
+                          replyRequest(accept);
+                        }}
+                        className="bg-yellow-700 text-white w-[8rem] h-[3rem] rounded-md">
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+          {/* Rejection code */}
+          {requestState === "reject" && (
+            <div>
+              {messages.map((msg, index) => {
+                {
+                  msg.sender === "You" ? (
+                    <div className="flex flex-col items-center gap-[0.7rem]">
+                      {" "}
+                      <div className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                        You rejected friendrequest of {receiverName}
+                      </div>
+                      <div className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                        If you want chatting with {receiverName} then first you
+                        need to send request
+                        <button
+                          onClick={sendRequest}
+                          className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                          Send Request
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-100 text-white w-[8rem] h-[2rem] rounded-md">
+                      {receiverName} rejected your friendrequest
+                    </div>
+                  );
                 }
-              }}
-            />
-            <button
-              onClick={sendMessage}
-              className="p-1 rounded-full hover:bg-gray-200 transition">
-              <FiSend size={30} />
-            </button>
-          </div>
-        )}
+              })}
+            </div>
+          )}
+          {/* Friend */}
+          {/* Type bar for sending sms*/}
+          {requestState === "friend" && (
+            <div className="relative flex items-center h-[4rem]">
+              {file && (
+                <div className="flex items-center p-2 bg-gray-100 rounded-lg mb-2">
+                  <img
+                    src={filePreview}
+                    alt="Preview"
+                    className="w-12 h-12 object-cover rounded-lg"
+                  />
+                  <span className="truncate">{file.name}</span>
+                  <button
+                    onClick={() => {
+                      setFile(null);
+                      setFilePreview(null);
+                    }}
+                    className="ml-2">
+                    <FiX
+                      size={20}
+                      className="text-gray-600 hover:text-red-500"
+                    />
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute pl-[0.7rem] rounded-full hover:bg-gray-200 transition">
+                <FiPaperclip size={20} />
+              </button>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <textarea
+                ref={messageInputRef}
+                value={message}
+                onChange={handleChange}
+                placeholder="Type a message..."
+                className="bg-slate-200 w-full h-[3.5rem] leading-[3.5rem] rounded-3xl pl-[2.7rem] text-[1.3rem] "
+                rows={1}
+                style={{ minHeight: "40px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+              />
+              <button
+                onClick={sendMessage}
+                className="p-1 rounded-full hover:bg-gray-200 transition">
+                <FiSend size={30} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

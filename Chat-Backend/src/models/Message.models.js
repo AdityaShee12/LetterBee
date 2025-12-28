@@ -22,7 +22,6 @@ const messageSchema = new mongoose.Schema({
         id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       },
       identifier: { type: String, unique: true },
-      relation: { type: String },
       text: { type: String },
       file: {
         fileName: { type: String },

@@ -51,7 +51,9 @@ const Sign_in = () => {
   };
 
   const sendOTP = async () => {
-    const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, { email });
+    const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, {
+      email,
+    });
     setChangePassword(false);
     setOtpVerified(true);
     setVerifyOtp(response.data.data.otp);
@@ -68,10 +70,13 @@ const Sign_in = () => {
 
   const passwordMaking = async () => {
     try {
-      const response = await axios.post(`${BACKEND_API}/api/v1/users/passwordChange`, {
-        password,
-        email,
-      });
+      const response = await axios.post(
+        `${BACKEND_API}/api/v1/users/passwordChange`,
+        {
+          password,
+          email,
+        }
+      );
       let data = response.data.data;
       dispatch(setUserId({ userId: data._id }));
       dispatch(setUserName({ userName: data.fullName }));
@@ -85,41 +90,45 @@ const Sign_in = () => {
 
   return (
     <div className="h-screen p-4 flex flex-col items-center justify-center space-y-4">
-      <div className="max-w-xl sm:max-w-sm md:max-w-md w-full p-8 rounded-xl flex flex-col  items-center border border-gray-300 space-y-4">
-        <h1 className="text-4xl text-center font-bold mb-4 font-mono">
-          Chat_Book
-        </h1>
+      <div className="max-w-xl sm:max-w-sm md:max-w-md w-full p-8 rounded-xl flex flex-col items-center space-y-4">
+        <img src="/LetterBee.png" alt="" />
         {signIn ? (
           <div className="space-y-4">
-            <input
-              id="email"
-              type="text"
-              placeholder="Username or email"
-              value={userName || email}
-              onChange={(e) => {
-                const value = e.target.value;
-                // simple email regex check
-                const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-                if (isEmail) {
-                  setEmail(value);
-                  setuserName("");
-                } else {
-                  setuserName(value);
-                  setEmail("");
-                }
-              }}
-              required
-              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
-            />
-            <input
-              id="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
-            />{" "}
+            <div className="relative group">
+              <input
+                id="email"
+                type="text"
+                placeholder="Username or email"
+                value={userName || email}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // simple email regex check
+                  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+                  if (isEmail) {
+                    setEmail(value);
+                    setuserName("");
+                  } else {
+                    setuserName(value);
+                    setEmail("");
+                  }
+                }}
+                required
+                className="px-[0.2rem] py-[0.3rem] w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl outline-none appearance-none"
+              />
+              <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+            </div>
+            <div className="relative group">
+              <input
+                id="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="px-[0.2rem] py-[0.3rem] w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl outline-none appearance-none"
+              />{" "}
+              <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+            </div>
             <button
               onClick={handleLogin}
               className="mt-4 max-w-xs sm:max-w-sm md:max-w-md w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300 text-center">
@@ -140,15 +149,18 @@ const Sign_in = () => {
                 className="w-[70vw] h-auto flex flex-col items-center lg:w-[30rem]
              xl:w-[30vw] xl:h-auto
            ">
-                <input
-                  type="number"
-                  value={otp}
-                  onChange={(e) => {
-                    setOtp(e.target.value);
-                  }}
-                  placeholder="Enter your OTP"
-                  className="w-[60vw] h-[7vh] border border-slate-400 text-xl rounded-xl pl-2  lg:w-[39vw] lg:text-[1.7rem]]  xl:w-[25vw] xl:text-[1rem] m-[18%] lg:m-[15%] xl:m-[8%]"
-                />
+                <div className="relative group">
+                  <input
+                    type="number"
+                    value={otp}
+                    onChange={(e) => {
+                      setOtp(e.target.value);
+                    }}
+                    placeholder="Enter your OTP"
+                    className="w-[60vw] h-[7vh] text-xl rounded-xl pl-2  lg:w-[39vw] lg:text-[1.7rem]]  xl:w-[25vw] xl:text-[1rem] m-[18%] lg:m-[15%] xl:m-[8%] outline-none appearance-none"
+                  />
+                  <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                </div>
                 <button
                   onClick={verify}
                   className="w-[60vw] h-[7vh] border border-slate-400 text-xl rounded-xl pl-2  lg:w-[39vw] lg:text-[1.7rem]]  xl:w-[25vw] xl:text-[1rem] mb-[18%] lg:mb-[15%] xl:mb-[8%]">
@@ -158,15 +170,18 @@ const Sign_in = () => {
             )}
             {createPassword && (
               <>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
-                />{" "}
+                <div className="relative group">
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
+                  />{" "}
+                  <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                </div>
                 <button
                   onClick={() => {
                     passwordMaking();
@@ -178,17 +193,20 @@ const Sign_in = () => {
             )}
             {changePassword && (
               <div>
-                <input
-                  id="email"
-                  type="text"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                  }}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
-                />
+                <div className="relative group">
+                  <input
+                    id="email"
+                    type="text"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                    }}
+                    required
+                    className="w-full p-3 outline-none appearance-none"
+                  />
+                  <div className="absolute w-[13rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                </div>
                 <button
                   onClick={() => sendOTP()}
                   className="mt-4 max-w-xs sm:max-w-sm md:max-w-md w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300 text-center">

@@ -13,10 +13,9 @@ const Otp = () => {
 
   const sendOtp = async () => {
     try {
-      const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, { email });
-      console.log(response);
-      console.log(response.data.data.email);
-      console.log(response.data.data.otp);
+      const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, {
+        email,
+      });
       setVerifyOtp(response.data.data.otp);
       setregisterEmail(response.data.data.email);
       setOtpSent(true);
@@ -26,14 +25,10 @@ const Otp = () => {
   };
 
   const verify = () => {
-    console.log(otp, verifyOtp);
-
     if (otp === verifyOtp) {
-      console.log("V", registeremail);
-
       navigate("/register", { state: { email: registeremail } });
     } else {
-      console.log("You gave the wrong OTP");
+      alert("You gave the wrong OTP");
     }
   };
 

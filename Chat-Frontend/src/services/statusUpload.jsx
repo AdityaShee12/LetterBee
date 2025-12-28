@@ -5,6 +5,7 @@ import { AiOutlineCamera, AiOutlineClose } from "react-icons/ai";
 import { BACKEND_API } from "../Backend_API.js";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { IoIosArrowBack } from "react-icons/io";
+import socket from "../socket.js";
 
 const StatusUpload = () => {
   const [statuses, setStatuses] = useState([]);
@@ -56,7 +57,7 @@ const StatusUpload = () => {
   const handleUpload = async () => {
     if (!file) return alert("Please select a file first");
     console.log("FD", userName);
-    
+
     const formData = new FormData();
     formData.append("status", file);
     formData.append("userId", userId);
@@ -73,6 +74,8 @@ const StatusUpload = () => {
       setUserStatus(response.data.data);
       console.log("SD", response);
       setPreviewUrl(null);
+      if (response.data.data)
+        socket.emit("statusUpdate", userId);
     } catch (err) {
       console.error("Upload failed:", err);
       alert("Upload failed");
@@ -163,8 +166,7 @@ const StatusUpload = () => {
   }, [zoom, selectedFile]);
 
   return (
-    <div className="mt-4 px-4">
-      <div className="pb-4 text-2xl font-mono">Status</div>
+    <div className="mt-4 px-4 pt-[3rem] pl-[4rem]">
       {/* Modal for preview */}
       {/* If atleast one status uploaded by user */}
       <div className="flex gap-3">
