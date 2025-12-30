@@ -103,11 +103,11 @@ and integrates Cloudinary, Google OAuth, and WebRTC services.
 ## Installation and Setup
 
 ### Step 1 Clone the Repository
-git clone https://github.com/AdityaShee12/Chat_Book.git
-cd Chat_Book
+git clone https://github.com/AdityaShee12/LetterBee.git
+cd LetterBee
 
 ### Step 2 Backend Setup
-cd Chat_Backend
+cd LetterBee-Backend
 npm install
 
 Create a .env file inside the Chat_Backend folder and add the following:
@@ -128,9 +128,9 @@ npm run dev
 ---
 
 ### Step 3 Frontend Setup
-cd Chat_Frontend
+cd LetterBee-Frontend
 npm install
-npm start
+npm run dev
 
 ---
 
