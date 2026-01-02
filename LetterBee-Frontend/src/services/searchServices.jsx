@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useNavigationType } from "react-router-dom";
 import CryptoJS from "crypto-js";
 import { debounce } from "lodash";
 import axios from "axios";
 import socket from "../socket.js";
 import { AiOutlineSearch } from "react-icons/ai";
 import { setSelectUser } from "../features/userSlice.js";
+import { setChatAction } from "../features/layoutSlice.js";
 import { useDispatch, useSelector } from "react-redux";
 import { BACKEND_API } from "../Backend_API.js";
 
 const Search = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
@@ -136,8 +136,6 @@ const Search = () => {
 
   // After selecting user from userlist
   const handleSelectUser = (user) => {
-    console.log("User",user);
-    
     const recieverName = user.fullName.replace(/\s+/g, "");
     dispatch(
       setSelectUser({
@@ -150,6 +148,13 @@ const Search = () => {
     setTimeout(() => {
       navigate(`/layout/chat/${recieverName}`);
     }, 300);
+    dispatch(
+      setChatAction({
+        chatAction: "chatPage",
+      })
+    );
+    console.log("Workredux");
+    
     setQuery("");
     setRecentUsers((prevUsers) => {
       const updatedUsers = prevUsers.filter(
@@ -187,7 +192,7 @@ const Search = () => {
   }, [users]);
 
   return (
-    <div className={`${selectedUser ? "lg:block hidden" : "visible"}`}>
+    <div>
       {/* Searchbar */}
       <div className="relative flex justify-center mt-[3.9rem] ml-[0.9rem] mr-[0.9rem]">
         <AiOutlineSearch

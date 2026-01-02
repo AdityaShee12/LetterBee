@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { loginUser } from "../services/userService.jsx";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,21 +20,15 @@ const Sign_in = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [verifyOtp, setVerifyOtp] = useState("");
   const [otp, setOtp] = useState("");
+  const [createPassword, setCreatePassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [passwordset, setPasswordSet] = useState(false);
-  const [createPassword, setCreatePassword] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const credentials = {
-      userName,
-      email,
-      password,
-    };
+    const credentials = { userName, email, password };
     try {
       const user = await loginUser(credentials);
-      console.log(user);
       dispatch(setUserId({ userId: user.data.loggedInUser._id }));
       dispatch(setUserName({ userName: user.data.loggedInUser.fullName }));
       dispatch(setUserAvatar({ userAvatar: user.data.loggedInUser.avatar }));
@@ -51,165 +45,142 @@ const Sign_in = () => {
   };
 
   const sendOTP = async () => {
-    const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, {
-      email,
-    });
+    const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, { email });
     setChangePassword(false);
     setOtpVerified(true);
     setVerifyOtp(response.data.data.otp);
   };
-  // Verify OTP
+
   const verify = () => {
     if (otp === verifyOtp) {
       setOtpVerified(false);
       setCreatePassword(true);
     } else {
-      console.log("You gave the wrong OTP");
+      console.log("Wrong OTP");
     }
   };
 
   const passwordMaking = async () => {
     try {
-      const response = await axios.post(
-        `${BACKEND_API}/api/v1/users/passwordChange`,
-        {
-          password,
-          email,
-        }
-      );
-      let data = response.data.data;
+      const response = await axios.post(`${BACKEND_API}/api/v1/users/passwordChange`, { password, email });
+      const data = response.data.data;
       dispatch(setUserId({ userId: data._id }));
       dispatch(setUserName({ userName: data.fullName }));
       dispatch(setUserAvatar({ userAvatar: data.avatar }));
       dispatch(setUserAbout({ userAbout: data.about }));
       navigate("/layout");
     } catch (error) {
-      console.log("Error is : ", error);
+      console.log("Error:", error);
     }
   };
 
   return (
-    <div className="h-screen p-4 flex flex-col items-center justify-center space-y-4">
-      <div className="max-w-xl sm:max-w-sm md:max-w-md w-full p-8 rounded-xl flex flex-col items-center space-y-4">
-        <img src="/LetterBee.png" alt="" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-100">
+      <div className="w-full max-w-xl sm:max-w-sm md:max-w-md p-8 rounded-xl flex flex-col items-center space-y-4">
+        <img src="/LetterBee.png" alt="Logo" />
+
         {signIn ? (
-          <div className="space-y-4">
-            <div className="relative group">
+          <div className="space-y-4 w-full flex flex-col items-center">
+            <div className="relative group w-full">
               <input
-                id="email"
                 type="text"
                 placeholder="Username or email"
                 value={userName || email}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // simple email regex check
                   const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-                  if (isEmail) {
-                    setEmail(value);
-                    setuserName("");
-                  } else {
-                    setuserName(value);
-                    setEmail("");
-                  }
+                  if (isEmail) { setEmail(value); setuserName(""); } else { setuserName(value); setEmail(""); }
                 }}
                 required
-                className="px-[0.2rem] py-[0.3rem] w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl outline-none appearance-none"
+                className="w-full text-lg sm:text-base px-2 py-1 outline-none"
               />
-              <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+              <div className="absolute left-0 bottom-0 w-full h-[0.1rem] bg-[#4337e6] group-hover:h-[0.25rem] transition-all rounded-xl"></div>
             </div>
-            <div className="relative group">
+
+            <div className="relative group w-full">
               <input
-                id="password"
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="px-[0.2rem] py-[0.3rem] w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl outline-none appearance-none"
-              />{" "}
-              <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                className="w-full text-lg sm:text-base px-2 py-1 outline-none"
+              />
+              <div className="absolute left-0 bottom-0 w-full h-[0.1rem] bg-[#4337e6] group-hover:h-[0.25rem] transition-all rounded-xl"></div>
             </div>
+
             <button
               onClick={handleLogin}
-              className="mt-4 max-w-xs sm:max-w-sm md:max-w-md w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300 text-center">
+              className="relative w-full max-w-xs sm:max-w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300"
+            >
               Sign in
             </button>
-            <div
-              className="flex justify-center cursor-pointer"
-              onClick={() => {
-                forgetPassword();
-              }}>
+
+            <div className="cursor-pointer" onClick={forgetPassword}>
               Forgot password?
             </div>
           </div>
         ) : (
-          <div>
+          <div className="w-full">
             {otpVerified && (
-              <div
-                className="w-[70vw] h-auto flex flex-col items-center lg:w-[30rem]
-             xl:w-[30vw] xl:h-auto
-           ">
-                <div className="relative group">
+              <div className="w-full flex flex-col items-center">
+                <div className="relative group w-full mb-4">
                   <input
                     type="number"
                     value={otp}
-                    onChange={(e) => {
-                      setOtp(e.target.value);
-                    }}
+                    onChange={(e) => setOtp(e.target.value)}
                     placeholder="Enter your OTP"
-                    className="w-[60vw] h-[7vh] text-xl rounded-xl pl-2  lg:w-[39vw] lg:text-[1.7rem]]  xl:w-[25vw] xl:text-[1rem] m-[18%] lg:m-[15%] xl:m-[8%] outline-none appearance-none"
+                    className="w-full text-lg sm:text-base px-2 py-1 outline-none rounded-xl"
                   />
-                  <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                  <div className="absolute left-0 bottom-0 w-full h-[0.1rem] bg-[#4337e6] group-hover:h-[0.25rem] transition-all rounded-xl"></div>
                 </div>
+
                 <button
                   onClick={verify}
-                  className="w-[60vw] h-[7vh] border border-slate-400 text-xl rounded-xl pl-2  lg:w-[39vw] lg:text-[1.7rem]]  xl:w-[25vw] xl:text-[1rem] mb-[18%] lg:mb-[15%] xl:mb-[8%]">
+                  className="w-full max-w-xs sm:max-w-full h-10 text-lg rounded-xl border border-slate-400 mb-4"
+                >
                   Verify your OTP
                 </button>
               </div>
             )}
+
             {createPassword && (
-              <>
-                <div className="relative group">
+              <div className="w-full">
+                <div className="relative group w-full mb-4">
                   <input
-                    id="password"
                     type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
-                  />{" "}
-                  <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                  />
                 </div>
                 <button
-                  onClick={() => {
-                    passwordMaking();
-                  }}
-                  className="mt-4 max-w-xs sm:max-w-sm md:max-w-md w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300 text-center">
+                  onClick={passwordMaking}
+                  className="w-full max-w-xs sm:max-w-full h-10 text-lg rounded-xl border border-gray-300 mb-4 font-bold"
+                >
                   Set Password
                 </button>
-              </>
+              </div>
             )}
+
             {changePassword && (
-              <div>
-                <div className="relative group">
+              <div className="w-full">
+                <div className="relative group w-full mb-4">
                   <input
-                    id="email"
                     type="text"
                     placeholder="Email"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full p-3 outline-none appearance-none"
+                    className="w-full p-3 outline-none appearance-none rounded-md border border-gray-300"
                   />
-                  <div className="absolute w-[13rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
                 </div>
                 <button
-                  onClick={() => sendOTP()}
-                  className="mt-4 max-w-xs sm:max-w-sm md:max-w-md w-full text-black font-bold py-2 px-4 rounded transition duration-300 font-mono hover:shadow-lg hover:shadow-sky-400 border border-gray-300 text-center">
+                  onClick={sendOTP}
+                  className="w-full max-w-xs sm:max-w-full h-10 text-lg rounded-xl border border-gray-300 mb-4 font-bold"
+                >
                   Send OTP
                 </button>
               </div>
@@ -217,12 +188,13 @@ const Sign_in = () => {
           </div>
         )}
       </div>
-      <div className="max-w-xs sm:max-w-sm md:max-w-md w-full p-4 rounded-xl flex items-center justify-center border border-gray-300 text-gray-700 text-center">
+
+      <div className="max-w-xs sm:max-w-full w-full p-4 rounded-xl flex items-center justify-center border border-gray-300 text-gray-700 text-center">
         Don't have an account?
         <div
-          className="inline-block text-blue-500 hover:text-blue-600 relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-0 after:h-[2px] after:bg-blue-500 hover:after:w-full after:transition-all after:duration-300 cursor-pointer"
-          onClick={() => navigate("/sign_up")}>
-          {" "}
+          className="inline-block text-blue-500 hover:text-blue-600 relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-0 after:h-[2px] after:bg-blue-500 hover:after:w-full after:transition-all after:duration-300 cursor-pointer ml-1"
+          onClick={() => navigate("/")}
+        >
           Sign up
         </div>
       </div>

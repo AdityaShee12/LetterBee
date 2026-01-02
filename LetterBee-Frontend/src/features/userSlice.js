@@ -11,6 +11,7 @@ const initialState = {
     receiverAvatar: "",
     receiverAbout: "",
   },
+  statusAction: null,
 };
 
 const userSlice = createSlice({

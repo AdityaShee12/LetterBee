@@ -28,15 +28,12 @@ const Sign_up = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // OAuth login
   const login = () => {
     window.open(`${BACKEND_API}/auth/google`, "_self");
   };
 
-  // send OTP
   const sendOtp = async () => {
     try {
-      console.log("Back", BACKEND_API, email);
       const response = await axios.post(`${BACKEND_API}/api/v1/users/otp`, {
         email,
       });
@@ -44,12 +41,11 @@ const Sign_up = () => {
       setregisterEmail(response.data.data.email);
       setOtpSent(false);
       setotpVerified(true);
-    } catch (error) {
-      alert("Email is wrong or happened something wrong in system");
+    } catch {
+      alert("Email is wrong or something went wrong");
     }
   };
 
-  // Verify OTP
   const verify = () => {
     if (otp === verifyOtp) {
       setotpVerified(false);
@@ -59,12 +55,8 @@ const Sign_up = () => {
     }
   };
 
-  // Sign IN
-  const signIn = () => {
-    navigate("/sign_in");
-  };
+  const signIn = () => navigate("/sign_in");
 
-  // Choose Avatar
   const chooseAvatar = () => {
     const regex = /^[a-z0-9._]+$/;
     if (!regex.test(userName)) {
@@ -77,21 +69,17 @@ const Sign_up = () => {
     }
   };
 
-  // Handling registration
   const handleRegister = async (e) => {
     e.preventDefault();
-
     const formData = new FormData();
     formData.append("fullName", fullName);
     formData.append("userName", userName);
     formData.append("email", email);
     formData.append("password", password);
     formData.append("about", about);
-    console.log("Username", userName);
-
     if (avatar) formData.append("avatar", avatar);
+
     try {
-      console.log("Form Data", [...formData]);
       const response = await registerUser(formData);
       dispatch(setUserId({ userId: response.data._id }));
       dispatch(setUserName({ userName: response.data.fullName }));
@@ -104,39 +92,36 @@ const Sign_up = () => {
   };
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="border border-slate-400 rounded-md h-[35rem] w-[26rem] flex flex-col items-center bg-white mt-[3rem] p-[2rem]">
-        <img src="/LetterBee.png" alt="" className="w-[18rem]" />{" "}
-        <div className="text-lg text-center font-serif text-slate-500 mb-[1rem]">
+    <div className="flex flex-col items-center px-2">
+      <div className="border border-slate-400 rounded-md bg-white mt-12 p-8 w-full max-w-[26rem] h-auto sm:h-[35rem] flex flex-col items-center">
+        <img src="/LetterBee.png" alt="" className="w-[18rem]" />
+
+        <div className="text-lg text-center font-serif text-slate-500 mb-4">
           Sign up to see photos and videos from your friends.
         </div>
-        <div className="w-[80vw] sm:w-[70vw] md:w-[50vw] lg:w-[30rem] xl:w-[30vw] flex flex-col items-center ">
-          {/* OTP sent */}
+
+        <div className="w-full flex flex-col items-center">
           {otpSent && (
             <>
-              <button className="bg-[#4337e6] text-white text-lg w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3" onClick={()=>alert("Oauth feature will be available within one week")}>
-                <img
-                  src="/googleIcon.jpg"
-                  alt="Google Icon"
-                  className="w-6 h-6"
-                />
-                <span>Login with Google</span>
+              <button className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3">
+                <img src="/googleIcon.jpg" alt="" className="w-6 h-6" />
+                Login with Google
               </button>
 
-              <div className="relative group flex justify-center">
-                {" "}
+              <div className="relative w-full max-w-[23rem]">
                 <input
                   type="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="px-[0.2rem] py-[0.3rem]  sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl outline-none appearance-none pl-[0.5rem]"
+                  className="w-full px-2 py-1 text-lg outline-none"
                 />
-                <div className="absolute w-[23rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
+                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#4337e6]"></div>
               </div>
+
               <button
                 onClick={sendOtp}
-                className="bg-[#4337e6] text-white text-lg w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3">
+                className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6">
                 Send OTP
               </button>
             </>
@@ -144,19 +129,20 @@ const Sign_up = () => {
 
           {otpVerified && (
             <>
-              <div className="relative group">
+              <div className="relative w-full max-w-[23rem]">
                 <input
                   type="number"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="Enter your OTP"
-                  className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl my-6 outline-none appearance-none pl-[0.5rem]"
+                  className="w-full px-2 py-1 text-lg outline-none my-6"
                 />
-                <div className="absolute w-[22.6rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[3.5rem] group-hover:h-[0.25rem] right-[0.81rem]"></div>
+                <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#4337e6]"></div>
               </div>
+
               <button
                 onClick={verify}
-                className="bg-[#4337e6] text-white text-lg w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3">
+                className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6">
                 Verify your OTP
               </button>
             </>
@@ -164,60 +150,53 @@ const Sign_up = () => {
 
           {createAccount && (
             <>
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl my-6 outline-none appearance-none"
-                />
-                <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[3.5rem] group-hover:h-[0.25rem]"></div>
-              </div>{" "}
-              <div className="relative group">
-                <input
-                  type="text"
-                  placeholder="Username"
-                  value={userName}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="-3 py-2 w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl mb-6 outline-none appearance-none"
-                />
-                <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] group-hover:h-[0.25rem]"></div>
-              </div>
-              <div className="relative mt-[0.5rem] group">
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl mb-6 outline-none appearance-none"
-                />{" "}
-                <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2rem] group-hover:h-[0.25rem]"></div>
-              </div>
+              {["Full Name", "Username", "Password"].map((label, i) => (
+                <div key={i} className="relative w-full max-w-[23rem] mb-6">
+                  <input
+                    type={label === "Password" ? "password" : "text"}
+                    placeholder={label}
+                    value={
+                      label === "Full Name"
+                        ? fullName
+                        : label === "Username"
+                        ? userName
+                        : password
+                    }
+                    onChange={(e) =>
+                      label === "Full Name"
+                        ? setFullName(e.target.value)
+                        : label === "Username"
+                        ? setUsername(e.target.value)
+                        : setPassword(e.target.value)
+                    }
+                    className="w-full px-2 py-1 text-lg outline-none"
+                  />
+                  <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#4337e6]"></div>
+                </div>
+              ))}
+
               <button
                 onClick={chooseAvatar}
-                className="bg-[#4337e6] text-white text-lg w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3">
-                {" "}
+                className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6">
                 Next
               </button>
             </>
           )}
         </div>
+
         {profilepic && (
-          <div className="w-[85vw] sm:w-[70vw] md:w-[34rem] lg:w-[30rem] xl:w-[26rem] flex flex-col items-center">
+          <div className="w-full max-w-[26rem] flex flex-col items-center">
             <label className="cursor-pointer">
-              <div className="bg-slate-300 w-[10rem] h-[10rem] rounded-full flex justify-center items-center mb-4">
+              <div className="bg-slate-300 w-32 h-32 rounded-full flex justify-center items-center mb-4">
                 {avatar ? (
                   <img
                     src={URL.createObjectURL(avatar)}
-                    alt="Profile"
-                    className="h-full w-full object-cover rounded-full"
+                    className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
                   <img
                     src="/profileIcon.png"
-                    alt="Profile"
-                    className="w-full h-full object-cover rounded-full bg-slate-100"
+                    className="w-full h-full rounded-full object-cover"
                   />
                 )}
               </div>
@@ -228,24 +207,27 @@ const Sign_up = () => {
                 className="hidden"
               />
             </label>
-            <div className="relative group">
+
+            <div className="relative w-full max-w-[23rem]">
               <input
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
                 placeholder="Write something about yourself..."
-                className="px-3 py-2 w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] text-lg sm:text-xl md:text-2xl mb-6 outline-none appearance-none"
+                className="w-full px-3 py-2 text-lg outline-none"
               />
-              <div className="absolute w-[23.8rem] h-[0.1rem] rounded-xl bg-[#4337e6] top-[2.5rem] left-[0.5rem] group-hover:h-[0.25rem]"></div>
-            </div>{" "}
+              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#4337e6]"></div>
+            </div>
+
             <button
               onClick={handleRegister}
-              className="bg-[#4337e6] text-white text-lg sm:text-xl md:text-2xl rounded-xl w-[80vw] sm:w-[60vw] md:w-[40vw] lg:w-[20rem] xl:w-[25vw] h-[3rem] sm:h-[3.5rem] my-2 duration-300 active:scale-95 hover:shadow-lg">
+              className="bg-[#4337e6] text-white text-lg rounded-xl w-full max-w-[23rem] h-[3rem] my-4">
               Next
             </button>
           </div>
         )}
       </div>
-      <p className="text-center text-gray-600 m-7 border border-slate-400 rounded-md p-4 w-[85vw] sm:w-[70vw] md:w-[34rem] lg:w-[25rem] xl:w-[26rem] text-lg sm:text-xl md:text-2xl lg:text-[1.4rem] xl:text-[1rem]">
+
+      <p className="text-center text-gray-600 m-7 border border-slate-400 rounded-md p-4 w-full max-w-[26rem] text-lg">
         Already have an account?{" "}
         <span className="text-[#4337e6] cursor-pointer" onClick={signIn}>
           Login here
@@ -254,4 +236,5 @@ const Sign_up = () => {
     </div>
   );
 };
+
 export default Sign_up;

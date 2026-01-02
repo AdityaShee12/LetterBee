@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import CryptoJS from "crypto-js";
 import socket from "../socket.js";
 import { AiOutlinePhone, AiOutlineVideoCamera } from "react-icons/ai";
@@ -184,8 +183,6 @@ const ChatPage = () => {
       let fileName = null;
       let fileType = null;
       let user;
-      console.log("SI", sender, sender.id);
-
       if (relation === "sent") {
         if (sender.id === userId) {
           user = "You";
@@ -785,7 +782,6 @@ const ChatPage = () => {
   useEffect(() => {
     socket.on("friends", (data) => {
       const { requestState } = data;
-      console.log(requestState);
       setTimeout(() => {
         if (requestState === "reject") {
           setRequestState("reject");
@@ -908,7 +904,7 @@ const ChatPage = () => {
     <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem] ">
       {/* profile */}
       <div
-        className="flex justify-between items-center w-full rounded-lg h-[4rem] cursor-pointer"
+        className="flex justify-between items-center w-full rounded-lg h-[4.5rem] cursor-pointer"
         onClick={(e) => openProfileContext(e)}>
         {/* profile pic, name and state */}
         <div className="flex items-center gap-4">
@@ -928,7 +924,9 @@ const ChatPage = () => {
           <AiOutlineVideoCamera
             size={27}
             className="mr-[0.5rem]"
-            onClick={()=>alert("Video call feature will be available within one week")}
+            onClick={() =>
+              alert("Video call feature will be available within one week")
+            }
           />
         </div>
       </div>
@@ -1093,14 +1091,13 @@ const ChatPage = () => {
         </div>
       )}
       {/* Message section */}
-      <div
-        className="w-full h-screen bg-cover bg-center"
-        style={{ backgroundImage: "url(/dtheme.png)" }}>
+      <div className="w-full bg-cover bg-center">
         <div className="flex flex-col w-full">
           {/* Showing Message */}
           <div
             ref={chatContainerRef}
-            className="lg:h-[79vh] h-[78.5vh] overflow-y-auto p-4">
+            className="lg:h-[80vh] h-[82.5vh] overflow-y-auto p-4"
+            style={{ backgroundImage: "url(/dtheme.png)" }}>
             {messages.map((msg, index) => (
               <div
                 key={index}
