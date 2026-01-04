@@ -27,7 +27,6 @@ let users = {};
 io.on("connection", (socket) => {
   // Chatting System
   socket.on("new-user-joined", async (userId, userName) => {
-    console.log("userId", userId, userName);
     socket.join(userId);
     if (users[userId]) {
       // Existing object ke preserve kore socketId update kora holo
@@ -35,11 +34,8 @@ io.on("connection", (socket) => {
       users[userId].name = userName;
       // viewers check kore map kora holo
       if (users[userId].viewers) {
-        console.log("1");
         users[userId].viewers.map((viewerId) => {
-          console.log("2");
           if (users[viewerId]?.selectedUser === userId) {
-            console.log("3");
             io.to(users[viewerId].id).emit("state", "online");
           }
         });
@@ -47,93 +43,84 @@ io.on("connection", (socket) => {
     } else {
       users[userId] = { id: userId, name: userName, socketId: socket.id };
     }
-    console.log("user joined", users);
+    console.log("Users", users);
   });
 
-  socket.on(
-    "reciever add",
-    async ({ userId, userName, receiverId, receiverName }) => {
-      try {
-        // send online or offline state
+  socket.on("reciever add", async ({ userId, receiverId, receiverName }) => {
+    try {
+      // send online or offline state
+      if (users[userId]) {
         users[userId].selectedUser = receiverId;
-        if (users[receiverId]) {
-          if (users[receiverId].socketId) {
-            if (users[receiverId].viewers) {
-              users[receiverId].viewers.push(userId);
-            } else {
-              users[receiverId].viewers = [userId];
-            }
+      }
+      if (users[receiverId]) {
+        if (users[receiverId].socketId) {
+          if (users[receiverId].viewers) {
+            users[receiverId].viewers.push(userId);
           } else {
-            if (users[receiverId].viewers) {
-              users[receiverId].viewers.push(userId);
-            } else {
-              users[receiverId].viewers = [userId];
-            }
+            users[receiverId].viewers = [userId];
           }
           io.to(userId).emit("state", "online");
         } else {
-          users[receiverId] = {
-            name: receiverName,
-            viewers: [userId],
-            socketId: null,
-          };
-          io.to(userId).emit("state", "offline");
-        }
-
-        const otherUsers = await User.findById(userId);
-        console.log("oth", otherUsers);
-
-        let isRelation = false;
-        otherUsers?.otherUsers?.map((user) => {
-          if (user.id.toString() === receiverId) {
-            console.log("U R Id", user.id, receiverId);
-            isRelation = true;
+          if (users[receiverId].viewers) {
+            users[receiverId].viewers.push(userId);
+          } else {
+            users[receiverId].viewers = [userId];
           }
+        }
+      } else {
+        console.log("Off");
+        users[receiverId] = {
+          id: receiverId,
+          name: receiverName,
+          viewers: [userId],
+          socketId: null,
+        };
+        console.log("users", users);
+        io.to(userId).emit("state", "offline");
+      }
+      const otherUsers = await User.findById(userId);
+      let isRelation = false;
+      otherUsers?.otherUsers?.map((user) => {
+        if (user.id.toString() === receiverId) {
+          isRelation = true;
+        }
+      });
+      if (isRelation) {
+        // store previous message
+        const chatData = await Message.findOne({
+          users: {
+            $all: [
+              { $elemMatch: { id: userId } },
+              { $elemMatch: { id: receiverId } },
+            ],
+          },
         });
-
-        if (isRelation) {
-          console.log("ISrel");
-
-          // store previous message
-          const chatData = await Message.findOne({
-            users: {
-              $all: [
-                { $elemMatch: { id: userId } },
-                { $elemMatch: { id: receiverId } },
-              ],
-            },
-          });
-          if (chatData) {
-            if (chatData.messages) {
-              console.log("state");
-
-              for (const message of chatData.messages) {
-                if (message.relation === "accept") {
-                  io.to(userId).emit("friends", { requestState: "accept" });
-                  io.to(userId).emit("storedSendersms", message);
-                } else if (message.relation === "reject") {
-                  io.to(userId).emit("friends", { requestState: "reject" });
-                  io.to(userId).emit("storedSendersms", message);
-                } else if (message.relation === "sent") {
-                  io.to(userId).emit("friends", { requestState: "sent" });
-                  io.to(userId).emit("storedSendersms", message);
-                } else {
-                  io.to(userId).emit("friends", { requestState: "friend" });
-                  io.to(userId).emit("storedSendersms", message);
-                }
+        if (chatData) {
+          if (chatData.messages) {
+            for (const message of chatData.messages) {
+              if (message.relation === "accept") {
+                io.to(userId).emit("friends", { requestState: "accept" });
+                io.to(userId).emit("storedSendersms", message);
+              } else if (message.relation === "reject") {
+                io.to(userId).emit("friends", { requestState: "reject" });
+                io.to(userId).emit("storedSendersms", message);
+              } else if (message.relation === "sent") {
+                io.to(userId).emit("friends", { requestState: "sent" });
+                io.to(userId).emit("storedSendersms", message);
+              } else {
+                io.to(userId).emit("friends", { requestState: "friend" });
+                io.to(userId).emit("storedSendersms", message);
               }
             }
           }
-        } else {
-          console.log("Nostate");
-
-          io.to(userId).emit("friends", { requestState: "noFriend" });
         }
-      } catch (error) {
-        console.error("Socket Error:", error);
+      } else {
+        io.to(userId).emit("friends", { requestState: "noFriend" });
       }
+    } catch (error) {
+      console.error("Socket Error:", error);
     }
-  );
+  });
 
   socket.on("check after reload", ({ userId, receiverId }) => {
     if (users[receiverId] && users[receiverId].socketId) {
@@ -147,6 +134,8 @@ io.on("connection", (socket) => {
       users[receiverId] = { viewers: [userId], socketId: null };
       io.to(userId).emit("state", "offline");
     }
+    console.log("CAR");
+    
   });
 
   socket.on("send message", async (data) => {
@@ -325,7 +314,6 @@ io.on("connection", (socket) => {
     ).select("otherUsers");
 
     const message = messages.messages[0];
-    console.log("sendRequestB");
 
     io.to(receiverId).emit("friends", { requestState: "sent" });
     io.to(receiverId).emit("storedSendersms", message);
@@ -353,7 +341,6 @@ io.on("connection", (socket) => {
       );
       io.to(receiverId).emit("requestReply", { accept: 1 });
       io.to(userId).emit("friends", { requestState: "friend" });
-      console.log("Accept");
     } else {
       let existingChat = await Message.findOne({
         "users.id": { $all: [userId, receiverId] },
@@ -374,7 +361,6 @@ io.on("connection", (socket) => {
       );
       io.to(receiverId).emit("requestReply", { accept: 0 });
       io.to(userId).emit("friends", { requestState: "reject" });
-      console.log("Reject");
     }
   });
 
@@ -430,22 +416,18 @@ io.on("connection", (socket) => {
 
   socket.on("ice-candidate", (candidate, ToId) => {
     socket.to(ToId).emit("ice-candidate", candidate);
-    console.log("candidate");
   });
 
   socket.on("offer", (offer, ToId) => {
     socket.to(ToId).emit("offer", offer);
-    console.log("OFFER");
   });
 
   socket.on("answer", (answer, ToId) => {
     socket.to(ToId).emit("answer", answer);
-    console.log("answer");
   });
 
   socket.on("delete-everyone", async (data) => {
     const { OwnId, ToId, identifier } = data;
-    console.log("OwnId,ToId", OwnId, ToId);
     try {
       // Step 1: Find the document
       const chat = await Message.findOne({
@@ -472,7 +454,6 @@ io.on("connection", (socket) => {
 
       // Step 4: Save the updated document
       await chat.save();
-      console.log("Message deleted successfully!");
     } catch (error) {
       console.log(error);
     }
@@ -487,7 +468,6 @@ io.on("connection", (socket) => {
         "users.id": { $all: [OwnId, ToId] },
       });
       if (!chat) {
-        console.log("No chat found!");
         return;
       }
       // Step 2: Find the index of the message with the given identifier
@@ -495,7 +475,6 @@ io.on("connection", (socket) => {
         (msg) => msg.identifier === identifier
       );
       if (!message) {
-        console.log("Message not found!");
         return;
       }
       if (sender === "You") {
@@ -510,19 +489,24 @@ io.on("connection", (socket) => {
       }
       // Step 4: Save the updated document
       await chat.save();
-      console.log("Message deleted successfully!");
     } catch (error) {
       console.log(error);
     }
   });
 
   socket.on("disconnect", async () => {
+    console.log("Disco");
+    
     const match = Object.values(users).find(
       (user) => user.socketId === socket.id
     );
     if (match && match.viewers) {
+      console.log("MV");
+      
       match.viewers.map((socketId) => {
         if (users[socketId].selectedUser === match.id) {
+          console.log("Match");
+          
           io.to(socketId).emit("checkDisconnect", "offline");
         }
         if (users[socketId]?.viewers) {
@@ -535,6 +519,7 @@ io.on("connection", (socket) => {
     if (match) {
       delete users[match.id];
     }
+    console.log("users", users);
   });
 });
 

@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { BACKEND_API } from "../Backend_API.js";
 import { clearChatAction, clearStatusAction } from "../features/layoutSlice.js";
+import socket from "../socket.js";
 
 const Layout = () => {
   const [email, setEmail] = useState();
@@ -200,6 +201,7 @@ const Layout = () => {
   // Logout
   const handleLogout = async () => {
     loadingFunc();
+    socket.emit("disconnect");
     const response = await axios.post(
       `${BACKEND_API}/api/v1/users/logout`,
       { userId },

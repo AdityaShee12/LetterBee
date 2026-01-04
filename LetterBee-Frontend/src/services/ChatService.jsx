@@ -157,7 +157,6 @@ const ChatPage = () => {
         console.log("on1");
         socket.emit("reciever add", {
           userId,
-          userName,
           receiverId,
           receiverName,
         });
@@ -170,6 +169,8 @@ const ChatPage = () => {
     socket.on("state", (state) => setState(state));
 
     socket.on("checkDisconnect", (state) => {
+      console.log("Cdisco");
+      
       setState(state);
       setTimeout(() => {
         socket.emit("check after reload", { userId, receiverId });
@@ -1096,7 +1097,7 @@ const ChatPage = () => {
           {/* Showing Message */}
           <div
             ref={chatContainerRef}
-            className="lg:h-[80vh] h-[82.5vh] overflow-y-auto p-4"
+            className="lg:h-[77vh] h-[82.5vh] overflow-y-auto p-4"
             style={{ backgroundImage: "url(/dtheme.png)" }}>
             {messages.map((msg, index) => (
               <div
@@ -1273,7 +1274,7 @@ const ChatPage = () => {
                 ) : (
                   <div
                     key={index}
-                    className="flex flex-col items-center gap-[0.7rem]">
+                    className="flex flex-col items-center gap-[0.3rem]">
                     <div className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
                       {receiverName} sent friend request to you
                     </div>
