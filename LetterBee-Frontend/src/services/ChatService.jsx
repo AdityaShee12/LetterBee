@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import CryptoJS from "crypto-js";
 import socket from "../socket.js";
 import { AiOutlinePhone, AiOutlineVideoCamera } from "react-icons/ai";
@@ -69,7 +69,6 @@ const ChatPage = () => {
   const zoomcontext = useRef(null);
   const [menuAnimation, setMenuAnimation] = useState(false);
   const [requestState, setRequestState] = useState("");
-
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -169,6 +168,7 @@ const ChatPage = () => {
     recieverFunction();
 
     socket.on("state", (state) => setState(state));
+
     socket.on("checkDisconnect", (state) => {
       setState(state);
       setTimeout(() => {
@@ -1227,11 +1227,19 @@ const ChatPage = () => {
             <div
               className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80"
               onClick={() => setSelectedImage(null)}>
-              <img
-                src={selectedImage}
-                alt="Full Size"
-                className="max-w-full max-h-full"
-              />
+              <TransformWrapper
+                initialScale={1}
+                wheel={{ step: 0.1 }}
+                pinch={{ step: 5 }}
+                doubleClick={{ disabled: true }}>
+                <TransformComponent>
+                  <img
+                    src={selectedImage}
+                    alt="Full Size"
+                    className="max-w-full max-h-full"
+                  />
+                </TransformComponent>
+              </TransformWrapper>
             </div>
           )}
           {/* Footer */}
@@ -1378,7 +1386,7 @@ const ChatPage = () => {
               <button
                 onClick={sendMessage}
                 className="p-1 rounded-full hover:bg-gray-200 transition">
-                <FiSend size={30} />
+                <FiSend size={30} className="text-[#4337e6]" />
               </button>
             </div>
           )}

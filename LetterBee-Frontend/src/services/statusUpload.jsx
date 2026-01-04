@@ -44,6 +44,11 @@ const StatusUpload = () => {
   const [frames, setFrames] = useState([]);
   const ffmpeg = new FFmpeg();
 
+  const [uploading, setUpLoading] = useState(false);
+
+  const loadingFunc = () => {
+    setUpLoading(true);
+  };
   useEffect(() => {
     console.log(previewUrl);
   }, [previewUrl]);
@@ -325,7 +330,7 @@ const StatusUpload = () => {
                           </div>
                         )}
                         <button
-                          className="absolute top-2 right-2 text-white text-xl"
+                          className="absolute top-2 right-2 right-2 text-black font-bold text-xl"
                           onClick={() => {
                             setZoom(false);
                             setSelectedFile(null);
@@ -366,13 +371,21 @@ const StatusUpload = () => {
                             className="hidden"
                           />
                         </label>
-                        {file && (
-                          <div
-                            className="w-20 h-7 rounded-lg mt-[0.7rem] ml-[0.3rem] text-green-600 text-xl cursor-pointer flex items-center justify-center"
-                            onClick={handleUpload}>
-                            Upload
-                          </div>
-                        )}
+                        {file &&
+                          (uploading ? (
+                            <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
+                              <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+                              <p className="mt-4 text-gray-600 dark:text-gray-300">
+                                uploading...
+                              </p>
+                            </div>
+                          ) : (
+                            <div
+                              className="w-20 h-7 rounded-lg mt-[0.7rem] ml-[0.3rem] text-green-600 text-xl cursor-pointer flex items-center justify-center"
+                              onClick={handleUpload}>
+                              Upload
+                            </div>
+                          ))}
                       </div>
                       {userStatus?.length > 0 && (
                         <div className="flex flex-col gap-3">
@@ -389,7 +402,6 @@ const StatusUpload = () => {
                                 <video
                                   src={file}
                                   controls
-                                  autoPlay
                                   className="w-[3.5rem] h-[3.5rem] rounded-full cursor-pointer"
                                 />
                               ) : (

@@ -167,8 +167,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const statusUpload = asyncHandler(async (req, res) => {
   const { userId, userName } = req.body;
-  console.log("Username",userName);
-  
+  console.log("Username", userName);
+
   const statusLocalPath = req.files?.status?.[0]?.path;
 
   const status = await uploadOnCloudinary(statusLocalPath);
@@ -325,7 +325,10 @@ const searchUser = asyncHandler(async (req, res) => {
     const { query, userId } = req.query;
     if (!query) return res.json([]);
     const users = await User.find({
-      fullName: { $regex: query, $options: "i" },
+      $or: [
+        { fullName: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ],
       _id: { $ne: userId },
     });
 
