@@ -201,7 +201,6 @@ const Layout = () => {
   // Logout
   const handleLogout = async () => {
     loadingFunc();
-    socket.emit("disconnect");
     const response = await axios.post(
       `${BACKEND_API}/api/v1/users/logout`,
       { userId },
