@@ -8,6 +8,7 @@ import { IoIosArrowBack } from "react-icons/io";
 import socket from "../socket.js";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
+import { set } from "lodash";
 
 const StatusUpload = () => {
   const [statuses, setStatuses] = useState([]);
@@ -138,6 +139,7 @@ const StatusUpload = () => {
 
   /* ================= UPLOAD ================= */
   const handleUpload = async () => {
+    loadingFunc();
     const uploadFile = isVideo ? trimmedBlob : file;
     if (!uploadFile) return alert("Trim video first");
 
@@ -159,6 +161,7 @@ const StatusUpload = () => {
       setPreviewUrl(null);
       setFrames([]);
       setTrimmedBlob(null);
+      setUpLoading(false);
     } catch (err) {
       alert("Upload failed");
       console.error(err);
