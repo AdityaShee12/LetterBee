@@ -1097,7 +1097,7 @@ const ChatPage = () => {
           {/* Showing Message */}
           <div
             ref={chatContainerRef}
-            className="lg:h-[77vh] h-[82.5vh] overflow-y-auto p-4"
+            className="lg:max-h-[77vh] max-h-[82.5vh] min-h-[72vh] overflow-y-auto p-4"
             style={{ backgroundImage: "url(/dtheme.png)" }}>
             {messages.map((msg, index) => (
               <div
@@ -1247,7 +1247,7 @@ const ChatPage = () => {
           {/* No friend */}
           {requestState === "noFriend" && (
             <div className="flex flex-col items-center gap-[0.7rem]">
-              <div className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+              <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
                 If you want chatting with {receiverName} then first you need to
                 send request
               </div>
@@ -1267,7 +1267,7 @@ const ChatPage = () => {
                     {" "}
                     <div
                       key={index}
-                      className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+                      className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
                       You sent friend request to {receiverName}
                     </div>
                   </div>
@@ -1275,10 +1275,10 @@ const ChatPage = () => {
                   <div
                     key={index}
                     className="flex flex-col items-center gap-[0.3rem]">
-                    <div className="bg-yellow-100 w-[33rem] h-[2rem] rounded-md text-center">
+                    <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
                       {receiverName} sent friend request to you
                     </div>
-                    <div className="flex gap-[3rem] px-5 py-3 text-4xl">
+                    <div className="flex gap-[3rem] px-5 pt-[0.5rem] text-4xl">
                       <button
                         onClick={() => {
                           const accept = 1;
@@ -1309,10 +1309,10 @@ const ChatPage = () => {
                   msg.sender === "You" ? (
                     <div className="flex flex-col items-center gap-[0.7rem]">
                       {" "}
-                      <div className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                      <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
                         You rejected friendrequest of {receiverName}
                       </div>
-                      <div className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                      <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
                         If you want chatting with {receiverName} then first you
                         need to send request
                         <button

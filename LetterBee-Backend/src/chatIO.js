@@ -333,7 +333,7 @@ io.on("connection", (socket) => {
       await Message.updateOne(
         {
           _id: existingChat._id,
-          "messages._id": sentMessage._id,
+          "messages._id": sentMessage?._id,
         },
         {
           $set: { "messages.$.relation": "friend" },

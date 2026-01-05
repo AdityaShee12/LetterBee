@@ -209,6 +209,7 @@ const Layout = () => {
       }
     );
     if (response) {
+      socket.disconnect();
       navigate("/sign_in");
       dispatch(clearUser());
     }
@@ -413,10 +414,10 @@ const Layout = () => {
             {contextMenu.show && (
               <div
                 ref={contextRef}
-                className={`absolute rounded-xl w-72 h-72 p-4 z-50 shadow-2xl border bg-slate-400 translate-x-4 transition-all duration-300 ease-out ${
+                className={`absolute rounded-xl w-72 h-72 p-4 z-50 shadow-2xl border bg-slate-400 translate-x-4 transition-all duration-300 ease-linear ${
                   menuAnimation
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-20"
+                    ? "opacity-100 translate-x-15"
+                    : "opacity-0 -translate-x-1"
                 }`}
                 style={{
                   top: contextMenu.y,
