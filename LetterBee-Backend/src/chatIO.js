@@ -120,6 +120,7 @@ io.on("connection", (socket) => {
     } catch (error) {
       console.error("Socket Error:", error);
     }
+    console.log(users);
   });
 
   socket.on("check after reload", ({ userId, receiverId }) => {
@@ -135,7 +136,6 @@ io.on("connection", (socket) => {
       io.to(userId).emit("state", "offline");
     }
     console.log("CAR");
-    
   });
 
   socket.on("send message", async (data) => {
@@ -496,17 +496,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", async () => {
     console.log("Disco");
-    
+
     const match = Object.values(users).find(
       (user) => user.socketId === socket.id
     );
     if (match && match.viewers) {
       console.log("MV");
-      
+
       match.viewers.map((socketId) => {
         if (users[socketId].selectedUser === match.id) {
           console.log("Match");
-          
+
           io.to(socketId).emit("checkDisconnect", "offline");
         }
         if (users[socketId]?.viewers) {
