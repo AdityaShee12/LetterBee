@@ -10,6 +10,7 @@ import {
 import { useDispatch } from "react-redux";
 import axios from "axios";
 import { BACKEND_API } from "../Backend_API.js";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Sign_in = () => {
   const [signIn, setSignIn] = useState(true);
@@ -24,6 +25,7 @@ const Sign_in = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const loadingFunc = () => {
     setLoading(true);
@@ -125,16 +127,21 @@ const Sign_in = () => {
                   <div className="absolute left-0 bottom-0 w-full h-[0.1rem] bg-[#4337e6] group-hover:h-[0.25rem] transition-all rounded-xl"></div>
                 </div>
 
-                <div className="relative group w-full">
+                <div className="relative w-full">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full text-lg sm:text-base px-2 py-1 outline-none"
+                    className="w-full text-lg sm:text-base px-2 py-1 outline-none pr-10"
                   />
-                  <div className="absolute left-0 bottom-0 w-full h-[0.1rem] bg-[#4337e6] group-hover:h-[0.25rem] transition-all rounded-xl"></div>
+
+                  <span
+                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </span>
                 </div>
 
                 <button

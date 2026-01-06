@@ -451,7 +451,7 @@ const Layout = () => {
                           className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
                         />
                       )}
-                      <label className="absolute -bottom-1 -right-1 bg-white border border-gray-300 p-1 rounded-full shadow cursor-pointer">
+                      <label className="absolute -bottom-1 -right-1 bg-white border border-gray-300 p-1 rounded-full shadow cursor-pointer mr-[0.7rem]">
                         <FaCamera className="text-blue-600 text-xs" />
                         <input
                           type="file"
