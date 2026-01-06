@@ -70,11 +70,13 @@ const Sign_in = () => {
   };
 
   const passwordMaking = async () => {
+    loadingFunc();
     try {
       const response = await axios.post(
         `${BACKEND_API}/api/v1/users/passwordChange`,
         { password, email }
       );
+      console.log(response);
       const data = response.data.data;
       dispatch(setUserId({ userId: data._id }));
       dispatch(setUserName({ userName: data.fullName }));
@@ -84,6 +86,7 @@ const Sign_in = () => {
     } catch (error) {
       console.log("Error:", error);
     }
+    setLoading(false);
   };
 
   return (

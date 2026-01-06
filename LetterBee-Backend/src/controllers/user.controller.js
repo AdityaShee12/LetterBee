@@ -247,14 +247,29 @@ const statusShow = asyncHandler(async (req, res) => {
 
 const setPassword = asyncHandler(async (req, res) => {
   const { password, email } = req.body;
-  const user = await User.findOneAndUpdate(
-    { email: email },
-    { $set: { password: password } },
-    { new: true, select: "_id fullName avatar about" } // updated document return
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json(
+      new ApiResponse(404, null, "User not found")
+    );
+  }
+
+  user.password = password; // plain password
+  await user.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        _id: user._id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        about: user.about,
+      },
+      "Password was changed successfully"
+    )
   );
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Password was change"));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {

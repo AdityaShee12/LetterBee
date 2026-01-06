@@ -50,6 +50,7 @@ const StatusUpload = () => {
   const loadingFunc = () => {
     setUpLoading(true);
   };
+
   useEffect(() => {
     console.log(previewUrl);
   }, [previewUrl]);
@@ -154,9 +155,7 @@ const StatusUpload = () => {
         formData,
         { withCredentials: true }
       );
-
-      if (res.data?.data) socket.emit("statusUpdate", userId);
-
+      setUserStatus(res.data.data);
       setFile(null);
       setPreviewUrl(null);
       setFrames([]);
@@ -376,12 +375,7 @@ const StatusUpload = () => {
                         </label>
                         {file &&
                           (uploading ? (
-                            <div className="h-screen w-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900">
-                              <div className="w-12 h-12 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-                              <p className="mt-4 text-gray-600 dark:text-gray-300">
-                                uploading...
-                              </p>
-                            </div>
+                            <div className="w-12 h-12 border-4 border-[#4337e6] border-dashed rounded-full animate-spin"></div>
                           ) : (
                             <div
                               className="w-20 h-7 rounded-lg mt-[0.7rem] ml-[0.3rem] text-green-600 text-xl cursor-pointer flex items-center justify-center"

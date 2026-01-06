@@ -256,7 +256,7 @@ const Layout = () => {
                   className="pl-[0.3rem] rounded-full hover:bg-gray-200"
                   onClick={() => chat()}>
                   {state === "message" ? (
-                    <AiFillMessage size={33} className="text-[#4337e6]"/>
+                    <AiFillMessage size={33} className="text-[#4337e6]" />
                   ) : (
                     <AiOutlineMessage
                       size={33}
@@ -270,7 +270,7 @@ const Layout = () => {
                   className="pl-[0.3rem] rounded-full hover:bg-gray-200"
                   onClick={statusUpload}>
                   {state === "status" ? (
-                    <FaCirclePlay size={33} className="text-[#4337e6]"/>
+                    <FaCirclePlay size={33} className="text-[#4337e6]" />
                   ) : (
                     <FaRegCirclePlay
                       size={33}
@@ -282,7 +282,7 @@ const Layout = () => {
                 {/* notification */}
                 <button className="pl-[0.3rem] rounded-full">
                   {state === "notification" ? (
-                    <AiFillNotification size={33} className="text-[#4337e6]"/>
+                    <AiFillNotification size={33} className="text-[#4337e6]" />
                   ) : (
                     <AiOutlineNotification
                       size={33}
@@ -326,7 +326,6 @@ const Layout = () => {
                 <Outlet />
               </div>
             </div>
-
             {/* ===================== MOBILE ===================== */}
             <div className="lg:hidden flex flex-col h-full">
               {/* Top bar */}
@@ -358,7 +357,7 @@ const Layout = () => {
                   className="pl-[0.3rem] rounded-full hover:bg-gray-200"
                   onClick={() => chat()}>
                   {state === "message" ? (
-                    <AiFillMessage size={33} className="text-[#4337e6]"/>
+                    <AiFillMessage size={33} className="text-[#4337e6]" />
                   ) : (
                     <AiOutlineMessage
                       size={33}
@@ -372,7 +371,7 @@ const Layout = () => {
                   className="pl-[0.3rem] rounded-full hover:bg-gray-200"
                   onClick={statusUpload}>
                   {state === "status" ? (
-                    <FaCirclePlay size={33} className="text-[#4337e6]"/>
+                    <FaCirclePlay size={33} className="text-[#4337e6]" />
                   ) : (
                     <FaRegCirclePlay
                       size={33}
@@ -384,7 +383,7 @@ const Layout = () => {
                 {/* notification */}
                 <button className="pl-[0.3rem] rounded-full">
                   {state === "notification" ? (
-                    <AiFillNotification size={33} className="text-[#4337e6]"/>
+                    <AiFillNotification size={33} className="text-[#4337e6]" />
                   ) : (
                     <AiOutlineNotification
                       size={33}
@@ -409,16 +408,17 @@ const Layout = () => {
                 </div>
               </div>
             </div>
-
             {/* ===================== CONTEXT MENU ===================== */}
             {contextMenu.show && (
               <div
                 ref={contextRef}
-                className={`absolute rounded-xl w-72 h-72 p-4 z-50 shadow-2xl border bg-slate-400 translate-x-4 transition-all duration-300 ease-linear ${
-                  menuAnimation
-                    ? "opacity-100 translate-x-15"
-                    : "opacity-0 -translate-x-1"
-                }`}
+                className={`absolute rounded-xl w-72 h-72 p-4 z-50 shadow-2xl border 
+                 bg-slate-400 transition-all duration-300 ease-out
+                 ${
+                   menuAnimation
+                     ? "opacity-100 translate-x-0"
+                     : "opacity-0 translate-x-6 lg:-translate-x-6"
+                 }`}
                 style={{
                   top: contextMenu.y,
                   left: contextMenu.x,
