@@ -154,7 +154,7 @@ const Search = () => {
       })
     );
     console.log("Workredux");
-    
+
     setQuery("");
     setRecentUsers((prevUsers) => {
       const updatedUsers = prevUsers.filter(
@@ -172,7 +172,13 @@ const Search = () => {
 
   // This code for show online after online
   useEffect(() => {
-    socket.emit("new-user-joined", userId, userName);
+    console.log("work");
+    if (socket.connected) {
+      socket.emit("new-user-joined", userId, userName);
+    } else {
+      socket.connect();
+      socket.emit("new-user-joined", userId, userName);
+    }
   }, []);
 
   // After sending last message userlist update code

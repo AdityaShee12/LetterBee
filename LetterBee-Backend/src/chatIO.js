@@ -25,6 +25,7 @@ const io = new Server(server, {
 let users = {};
 
 io.on("connection", (socket) => {
+  console.log("New Joined");
   // Chatting System
   socket.on("new-user-joined", async (userId, userName) => {
     socket.join(userId);
@@ -43,7 +44,7 @@ io.on("connection", (socket) => {
     } else {
       users[userId] = { id: userId, name: userName, socketId: socket.id };
     }
-    console.log("Users", users);
+    console.log("Usersjoin", users);
   });
 
   socket.on("reciever add", async ({ userId, receiverId, receiverName }) => {
@@ -66,6 +67,7 @@ io.on("connection", (socket) => {
           } else {
             users[receiverId].viewers = [userId];
           }
+          io.to(userId).emit("state", "offline");
         }
       } else {
         console.log("Off");
@@ -120,7 +122,7 @@ io.on("connection", (socket) => {
     } catch (error) {
       console.error("Socket Error:", error);
     }
-    console.log(users);
+    console.log("UsersRec", users);
   });
 
   socket.on("check after reload", ({ userId, receiverId }) => {
@@ -494,32 +496,30 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", async () => {
-    console.log("Disco");
-
-    const match = Object.values(users).find(
-      (user) => user.socketId === socket.id
+  socket.on("disconnect", () => {
+    const entry = Object.entries(users).find(
+      ([_, user]) => user.socketId === socket.id
     );
-    if (match && match.viewers) {
-      console.log("MV");
 
-      match.viewers.map((socketId) => {
-        if (users[socketId].selectedUser === match.id) {
-          console.log("Match");
+    if (!entry) return;
 
-          io.to(socketId).emit("checkDisconnect", "offline");
+    const [userId, user] = entry;
+
+    if (user.viewers?.length) {
+      user.viewers.forEach((viewerId) => {
+        const viewer = users[viewerId];
+        if (!viewer) return;
+
+        if (viewer.selectedUser === userId) {
+          io.to(viewer.socketId).emit("checkDisconnect", "offline");
         }
-        if (users[socketId]?.viewers) {
-          users[socketId].viewers = users[socketId].viewers.filter((id) => {
-            id == match.id;
-          });
-        }
+
+        viewer.viewers = viewer.viewers?.filter((id) => id !== userId);
       });
     }
-    if (match) {
-      delete users[match.id];
-    }
-    console.log("users", users);
+
+    delete users[userId];
+    console.log("usersDE", users);
   });
 });
 
