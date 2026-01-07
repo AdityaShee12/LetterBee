@@ -14,6 +14,7 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { BACKEND_API } from "../Backend_API.js";
 import { clearChatAction, clearStatusAction } from "../features/layoutSlice.js";
 import socket from "../socket.js";
+import { set } from "lodash";
 
 const Layout = () => {
   const [email, setEmail] = useState();
@@ -45,6 +46,7 @@ const Layout = () => {
   const [list, setList] = useState(false);
   const navigationType = useNavigationType(); // PUSH | POP | REPLACE
   const [loading, setLoading] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
 
   const loadingFunc = () => {
     setLoading(true);
@@ -156,8 +158,13 @@ const Layout = () => {
     });
   };
 
+  const cameraLoadingFunc = () => {
+    setCameraLoading(true);
+  };
+
   // Update proiflepic section
   const handleProfilePicChange = async (e) => {
+    cameraLoadingFunc();
     const file = e.target.files?.[0] || null;
     const formData = new FormData();
     formData.append("userId", userId);
@@ -171,6 +178,7 @@ const Layout = () => {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
+      setCameraLoading(false);
       const updated = response.data.data;
       dispatch(setUserAvatar({ userAvatar: updated.avatar }));
     } catch (error) {
@@ -427,39 +435,47 @@ const Layout = () => {
                 {/* Profile section */}
                 <div className="flex flex-col items-start relative w-full">
                   <div className="relative">
-                    <div className="relative w-24 h-24">
-                      {isZoomed ? (
-                        <TransformWrapper
-                          initialScale={1}
-                          wheel={{ step: 0.1 }}
-                          pinch={{ step: 5 }}
-                          doubleClick={{ disabled: true }}>
-                          <TransformComponent>
-                            <img
-                              src={userAvatar}
-                              alt="Profile"
-                              className="w-[48vw] h-[95vh]"
-                              onClick={() => setShowFullImage(true)}
-                            />
-                          </TransformComponent>
-                        </TransformWrapper>
-                      ) : (
-                        <img
-                          src={userAvatar}
-                          alt="Profile"
-                          onClick={() => setIsZoomed(true)}
-                          className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-                        />
-                      )}
-                      <label className="absolute -bottom-1 -right-1 bg-white border border-gray-300 p-1 rounded-full shadow cursor-pointer mr-[0.7rem]">
-                        <FaCamera className="text-blue-600 text-xs" />
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={handleProfilePicChange}
-                        />
-                      </label>
-                    </div>
+                    {cameraLoading ? (
+                      <div className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg flex justify-center items-center">
+                        {" "}
+                        <div className="w-12 h-12 border-4 border-[#4337e6] border-dashed rounded-full animate-spin"></div>
+                      </div>
+                    ) : (
+                      <div className="relative w-24 h-24">
+                        {isZoomed ? (
+                          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80">
+                            <TransformWrapper
+                              initialScale={1}
+                              wheel={{ step: 0.1 }}
+                              pinch={{ step: 5 }}
+                              doubleClick={{ disabled: true }}>
+                              <TransformComponent>
+                                <img
+                                  src={userAvatar}
+                                  className="max-w-full max-h-full"
+                                  onClick={() => setIsZoomed(false)}
+                                />
+                              </TransformComponent>
+                            </TransformWrapper>
+                          </div>
+                        ) : (
+                          <img
+                            src={userAvatar}
+                            alt="Profile"
+                            onClick={() => setIsZoomed(true)}
+                            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                          />
+                        )}
+                        <label className="absolute -bottom-1 -right-1 bg-white border border-gray-300 p-1 rounded-full shadow cursor-pointer mr-[0.7rem]">
+                          <FaCamera className="text-blue-600 text-xs" />
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={handleProfilePicChange}
+                          />
+                        </label>
+                      </div>
+                    )}
                     <p className="mt-3 font-medium text-sm">{userName}</p>
                   </div>
 

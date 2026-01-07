@@ -179,15 +179,21 @@ const Sign_in = () => {
 
                 {createPassword && (
                   <div className="w-full">
-                    <div className="relative group w-full mb-4">
+                    <div className="relative w-full">
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none bg-slate-100"
+                        className="w-full text-lg sm:text-base px-2 py-1 outline-none pr-10"
                       />
+
+                      <span
+                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500"
+                        onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </span>
                     </div>
                     <button
                       onClick={passwordMaking}
