@@ -31,7 +31,7 @@ const Sign_up = () => {
   const [loading, setLoading] = useState(false);
 
   const login = () => {
-    window.open(`${BACKEND_API}/api/v1/users/auth/google`, "_self");
+    window.open(`${BACKEND_API}/auth/google`, "_self");
   };
 
   const loadingFunc = () => {
@@ -123,13 +123,10 @@ const Sign_up = () => {
             <div className="w-full flex flex-col items-center">
               {otpSent && (
                 <>
-                  <button className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3">
-                    <img
-                      src="/googleIcon.jpg"
-                      alt=""
-                      className="w-6 h-6"
-                      onClick={login}
-                    />
+                  <button
+                    className="bg-[#4337e6] text-white text-lg w-full max-w-[23rem] h-[2.8rem] rounded-xl my-6 flex items-center justify-center gap-3"
+                    onClick={login}>
+                    <img src="/googleIcon.jpg" alt="" className="w-6 h-6" />
                     Login with Google
                   </button>
 

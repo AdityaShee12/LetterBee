@@ -226,7 +226,7 @@ const Sign_in = () => {
             )}
           </div>
 
-          <div className="max-w-xs sm:max-w-full w-full p-4 rounded-xl flex items-center justify-center border border-gray-300 text-gray-700 text-center">
+          <div className="relative max-w-xs sm:max-w-full p-4 rounded-xl flex items-center justify-center border border-gray-300 text-gray-700 text-center">
             Don't have an account?
             <div
               className="inline-block text-blue-500 hover:text-blue-600 relative after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-0 after:h-[2px] after:bg-blue-500 hover:after:w-full after:transition-all after:duration-300 cursor-pointer ml-1"

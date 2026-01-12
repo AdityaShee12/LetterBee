@@ -14,7 +14,6 @@ import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { BACKEND_API } from "../Backend_API.js";
 import { clearChatAction, clearStatusAction } from "../features/layoutSlice.js";
 import socket from "../socket.js";
-import { set } from "lodash";
 
 const Layout = () => {
   const [email, setEmail] = useState();
