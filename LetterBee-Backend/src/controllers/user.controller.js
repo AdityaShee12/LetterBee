@@ -119,6 +119,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registered Successfully"));
 });
 
+
 const loginUser = asyncHandler(async (req, res) => {
   const { email, userName, password } = req.body;
   if (!userName && !email) {
@@ -250,9 +251,7 @@ const setPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(404).json(
-      new ApiResponse(404, null, "User not found")
-    );
+    return res.status(404).json(new ApiResponse(404, null, "User not found"));
   }
 
   user.password = password; // plain password
