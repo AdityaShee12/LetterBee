@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { registerUser } from "../services/userService";
+import { registerUser } from "../services/user.service.jsx";
 import {
   setUserId,
   setUserName,

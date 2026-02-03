@@ -44,26 +44,28 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
-    state: {
-      type: String,
-      enum: ["online", "offline"],
-      default: "offline",
-    },
     otherUsers: [
       {
         id: {
-          type: mongoose.Schema.Types.ObjectId,
+          type: Schema.Types.ObjectId,
           ref: "User",
           required: true,
         },
+        fullName: { type: String, required: true },
+        avatar: { type: String },
         relation: { type: String },
+        about: { typee: String },
+        participantType: { type: String },
       },
     ],
   },
   {
     timestamps: true,
-  }
+  },
 );
+
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ userName: 1 }, { unique: true });
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -88,7 +90,7 @@ userSchema.methods.generateAccessToken = function () {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    }
+    },
   );
 };
 userSchema.methods.generateRefreshToken = function () {
@@ -99,7 +101,7 @@ userSchema.methods.generateRefreshToken = function () {
     process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
-    }
+    },
   );
 };
 

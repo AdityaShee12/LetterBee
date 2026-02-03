@@ -7,7 +7,9 @@ import {
 import Sign_up from "./components/Sign_up.jsx";
 import Sign_in from "./components/Sign_in.jsx";
 import Layout from "./components/Layout.jsx";
-import ChatPage from "./services/ChatService.jsx";
+import ChatPage from "./services/chat.service.jsx";
+import GroupChatPage from "./services/GroupChatPage.service.jsx";
+
 const App = createBrowserRouter(
   createRoutesFromElements(
     <>
@@ -15,9 +17,10 @@ const App = createBrowserRouter(
       <Route path="/sign_in" element={<Sign_in />} />
       <Route path="/layout" element={<Layout />}>
         <Route path="chat/:userName" element={<ChatPage />} />
+        <Route path="groupChat/:groupName" element={<GroupChatPage />} />
       </Route>
-    </>
-  )
+    </>,
+  ),
 );
 
 export default App;

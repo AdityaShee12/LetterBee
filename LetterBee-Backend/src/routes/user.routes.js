@@ -10,8 +10,11 @@ import {
   profileAboutChange,
   userList,
   statusUpload,
-    statusShow,
+  statusShow,
   refreshAccessToken,
+  groupMessage,
+  friends,
+  createGroup,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -30,7 +33,7 @@ router.route("/register").post(
       maxCount: 1,
     },
   ]),
-  registerUser
+  registerUser,
 );
 router.route("/login").post(loginUser);
 router.route("/passwordChange").post(setPassword);
@@ -42,7 +45,7 @@ router.route("/status").post(
       maxCount: 1,
     },
   ]),
-  statusUpload
+  statusUpload,
 );
 router.post("/profilePicChange", upload.single("avatar"), profilePicChange);
 router.post("/profileAboutChange", profileAboutChange);
@@ -50,5 +53,15 @@ router.route("/searchUser").get(searchUser);
 router.route("/userList").get(userList);
 router.route("/statusShow").post(statusShow);
 router.route("/refresh-token").post(refreshAccessToken);
-
+router.route("/createGroup").post(
+  upload.fields([
+    {
+      name: "groupAvatar",
+      maxCount: 1,
+    },
+  ]),
+  createGroup,
+);
+router.route("/groupMessage").get(groupMessage);
+router.route("/friends").get(friends);
 export default router;

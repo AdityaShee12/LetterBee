@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { User } from "./models/user.models.js";
 import { Message } from "./models/Message.models.js";
+import { GroupMessage } from "./models/groupMessage.models.js";
 import { Notification } from "./models/notification.models.js";
 import fs from "fs";
 import dotenv from "dotenv";
@@ -22,7 +23,8 @@ const io = new Server(server, {
   },
 });
 
-let users = {};
+let users = {},
+  groups = {};
 
 io.on("connection", (socket) => {
   console.log("New Joined");
@@ -81,40 +83,50 @@ io.on("connection", (socket) => {
         io.to(userId).emit("state", "offline");
       }
       const otherUsers = await User.findById(userId);
-      let isRelation = false;
-      otherUsers?.otherUsers?.map((user) => {
-        if (user.id.toString() === receiverId) {
-          isRelation = true;
-        }
-      });
-      if (isRelation) {
-        // store previous message
-        const chatData = await Message.findOne({
-          users: {
-            $all: [
-              { $elemMatch: { id: userId } },
-              { $elemMatch: { id: receiverId } },
-            ],
-          },
-        });
-        if (chatData) {
-          if (chatData.messages) {
-            for (const message of chatData.messages) {
-              if (message.relation === "accept") {
-                io.to(userId).emit("friends", { requestState: "accept" });
-                io.to(userId).emit("storedSendersms", message);
-              } else if (message.relation === "reject") {
-                io.to(userId).emit("friends", { requestState: "reject" });
-                io.to(userId).emit("storedSendersms", message);
-              } else if (message.relation === "sent") {
-                io.to(userId).emit("friends", { requestState: "sent" });
-                io.to(userId).emit("storedSendersms", message);
-              } else {
-                io.to(userId).emit("friends", { requestState: "friend" });
-                io.to(userId).emit("storedSendersms", message);
+
+      const userList = Array.isArray(otherUsers?.otherUsers)
+        ? otherUsers.otherUsers
+        : [];
+
+      if (userList.length > 0) {
+        let found = false;
+        for (const user of userList) {
+          if (user.id.toString() === receiverId) {
+            found = true;
+            if (user.relation === "reject") {
+              io.to(userId).emit("friends", {
+                requestState: "reject",
+                participantType: user.participantType,
+              });
+            } else if (user.relation === "sent") {
+              io.to(userId).emit("friends", {
+                requestState: "sent",
+                participantType: user.participantType,
+              });
+            } else if (user.relation === "friend") {
+              io.to(userId).emit("requestSender", {
+                data: user.participantType === "sender" ? "receiver" : "sender",
+              });
+              io.to(userId).emit("friends", { requestState: "friend" });
+              const chatData = await Message.findOne({
+                users: {
+                  $all: [
+                    { $elemMatch: { id: userId } },
+                    { $elemMatch: { id: receiverId } },
+                  ],
+                },
+              });
+              if (chatData?.messages) {
+                for (const message of chatData.messages) {
+                  io.to(userId).emit("storedSms", message);
+                }
               }
             }
+            break;
           }
+        }
+        if (!found) {
+          io.to(userId).emit("friends", { requestState: "noFriend" });
         }
       } else {
         io.to(userId).emit("friends", { requestState: "noFriend" });
@@ -122,7 +134,6 @@ io.on("connection", (socket) => {
     } catch (error) {
       console.error("Socket Error:", error);
     }
-    console.log("UsersRec", users);
   });
 
   socket.on("check after reload", ({ userId, receiverId }) => {
@@ -249,7 +260,7 @@ io.on("connection", (socket) => {
           if (existingNotification) {
             await Notification.updateOne(
               { "sender.id": userId, "receiver.id": receiverId },
-              { $push: { messages: newMessage } }
+              { $push: { messages: newMessage } },
             );
           } else {
             await Notification.create({
@@ -276,94 +287,71 @@ io.on("connection", (socket) => {
       receiverId,
       receiverName,
       receiverAvatar,
-      identifier,
     } = data;
-    const messages = await Message.create({
-      users: [
-        { id: userId, name: userName, avatar: userAvatar },
-        { id: receiverId, name: receiverName, avatar: receiverAvatar },
-      ],
-      messages: [
-        {
-          sender: { id: userId },
-          reciever: { id: receiverId },
-          identifier: identifier,
+
+    // Sender side
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: {
+        otherUsers: {
+          id: receiverId,
+          fullName: receiverName,
+          avatar: receiverAvatar,
           relation: "sent",
-          text: "",
-          sender_delete: false,
-          reciever_delete: false,
-          timestamp: Date.now(),
+          participantType: "sender",
         },
-      ],
+      },
     });
-    await User.findByIdAndUpdate(
-      userId,
-      {
-        $addToSet: {
-          otherUsers: { id: receiverId },
+
+    // Receiver side
+    await User.findByIdAndUpdate(receiverId, {
+      $addToSet: {
+        otherUsers: {
+          id: userId,
+          fullName: userName,
+          avatar: userAvatar,
+          relation: "sent",
+          participantType: "receiver",
         },
       },
-      { new: true } // updated doc return করবে
-    ).select("otherUsers");
-    await User.findByIdAndUpdate(
-      receiverId,
-      {
-        $addToSet: {
-          otherUsers: { id: userId },
-        },
-      },
-      { new: true } // updated doc return করবে
-    ).select("otherUsers");
+    });
 
-    const message = messages.messages[0];
-
-    io.to(receiverId).emit("friends", { requestState: "sent" });
-    io.to(receiverId).emit("storedSendersms", message);
+    io.to(receiverId).emit("friends", {
+      requestState: "sent",
+      participantType: "receiver",
+    });
   });
 
   socket.on("acceptRequest", async (data) => {
     const { userId, receiverId, accept } = data;
-    if (accept === 1) {
-      let existingChat = await Message.findOne({
-        "users.id": { $all: [userId, receiverId] },
-      });
-      // check if there is a message with relation "sent"
-      let sentMessage = existingChat.messages.find(
-        (msg) => msg.relation === "sent"
-      );
-      // Update that message's relation to "friend"
-      await Message.updateOne(
-        {
-          _id: existingChat._id,
-          "messages._id": sentMessage?._id,
+
+    const relation = accept === 1 ? "friend" : "reject";
+
+    // User side
+    await User.findOneAndUpdate(
+      { _id: userId, "otherUsers.id": receiverId },
+      {
+        $set: {
+          "otherUsers.$.relation": relation,
+          "otherUsers.$.participantType": "sender",
         },
-        {
-          $set: { "messages.$.relation": "friend" },
-        }
-      );
-      io.to(receiverId).emit("requestReply", { accept: 1 });
-      io.to(userId).emit("friends", { requestState: "friend" });
-    } else {
-      let existingChat = await Message.findOne({
-        "users.id": { $all: [userId, receiverId] },
-      });
-      // check if there is a message with relation "sent"
-      let sentMessage = existingChat.messages.find(
-        (msg) => msg.relation === "sent"
-      );
-      // Update that message's relation to "friend"
-      await Message.updateOne(
-        {
-          _id: existingChat._id,
-          "messages._id": sentMessage._id,
+      },
+    );
+
+    // Receiver side
+    await User.findOneAndUpdate(
+      { _id: receiverId, "otherUsers.id": userId },
+      {
+        $set: {
+          "otherUsers.$.relation": relation,
+          "otherUsers.$.participantType": "receiver",
         },
-        {
-          $set: { "messages.$.relation": "reject" },
-        }
-      );
-      io.to(receiverId).emit("requestReply", { accept: 0 });
-      io.to(userId).emit("friends", { requestState: "reject" });
-    }
+      },
+    );
+
+    io.to(receiverId).emit("requestReply", { accept });
+    io.to(userId).emit("friends", {
+      requestState: relation,
+    });
   });
 
   socket.on("offline_User sms", async (data) => {
@@ -397,7 +385,7 @@ io.on("connection", (socket) => {
       if (existingNotification) {
         await Notification.updateOne(
           { "sender.id": OwnId, "receiver.id": ToId },
-          { $push: { messages: newMessage } }
+          { $push: { messages: newMessage } },
         );
       } else {
         await Notification.create({
@@ -443,7 +431,7 @@ io.on("connection", (socket) => {
 
       // Step 2: Find the index of the message with the given identifier
       const messageIndex = chat.messages.findIndex(
-        (msg) => msg.identifier === identifier
+        (msg) => msg.identifier === identifier,
       );
 
       if (messageIndex === -1) {
@@ -474,7 +462,7 @@ io.on("connection", (socket) => {
       }
       // Step 2: Find the index of the message with the given identifier
       const message = chat.messages.find(
-        (msg) => msg.identifier === identifier
+        (msg) => msg.identifier === identifier,
       );
       if (!message) {
         return;
@@ -486,7 +474,7 @@ io.on("connection", (socket) => {
       }
       if (message.sender_delete && message.reciever_delete) {
         chat.messages = chat.messages.filter(
-          (msg) => msg.identifier !== identifier
+          (msg) => msg.identifier !== identifier,
         );
       }
       // Step 4: Save the updated document
@@ -496,9 +484,82 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("groupClick", async (data) => {
+    const { groupMembers, groupId } = data;
+    socket.join(groupId);
+    const onlineMember = groupMembers.map((member) => {
+      if (users[member.id]) {
+        return member;
+      }
+    });
+
+    const groupMessages =
+      await GroupMessage.findById(groupId).select("messages");
+    io.to(groupId).emit("onlineMember", onlineMember);
+    for (const member of onlineMember) {
+      io.to(member.id).emit("updateState", { userId: member.id });
+    }
+    groupMessages.map((message) => {
+      io.to(groupId).emit("groupStoredMessages", {
+        senderId: message.sender.id,
+        name: message.sender.name,
+        avatar: message.sender.avatar,
+        identifier: message.sender.identifier,
+        text: message.text,
+        file: message.file,
+      });
+    });
+  });
+
+  socket.on("send groupMessage", async () => {
+    const {
+      groupId,
+      userId,
+      userName,
+      userAvatar,
+      receiverId,
+      receiverName,
+      receiverAvatar,
+      identifier,
+      sms,
+      fileName,
+      fileType,
+      fileData,
+    } = data;
+    if (fileData) {
+      const filePath = path.join(__dirname, "uploads", fileName);
+      fs.writeFileSync(filePath, Buffer.from(fileData));
+    }
+    io.to(receiverId).emit("receive groupMessage", {
+      senderId: userId,
+      identifier,
+      fileName,
+      fileType,
+      fileData,
+      sms,
+    });
+    let existingChat = await GroupMessage.findById(groupId);
+    if (existingChat) {
+      existingChat.messages.push({
+        sender: { id: userId },
+        identifier: identifier,
+        text: sms,
+        sender_delete: false,
+        reciever_delete: [],
+        file: {
+          fileName,
+          fileType,
+          fileData,
+        },
+        timestamp: Date.now(),
+      });
+      await existingChat.save();
+    }
+  });
+
   socket.on("disconnect", () => {
     const entry = Object.entries(users).find(
-      ([_, user]) => user.socketId === socket.id
+      ([_, user]) => user.socketId === socket.id,
     );
 
     if (!entry) return;

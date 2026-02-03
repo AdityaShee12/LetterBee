@@ -2,12 +2,15 @@ import { useState } from "react";
 import { FaRegCirclePlay, FaCirclePlay } from "react-icons/fa6";
 import { AiOutlineMessage, AiFillMessage } from "react-icons/ai";
 import { AiOutlineNotification, AiFillNotification } from "react-icons/ai";
+import { MdGroup, MdOutlineGroup, MdMoreVert } from "react-icons/md";
 import { FaCamera, FaPen } from "react-icons/fa";
 import { useNavigate, Outlet, useNavigationType } from "react-router-dom";
-import Search from "../services/searchServices.jsx";
 import { useEffect, useRef } from "react";
 import axios from "axios";
-import StatusUpload from "../services/statusUpload.jsx";
+import Search from "../services/search.service.jsx";
+import StatusUpload from "../services/status.service.jsx";
+import GroupSearch from "../services/groupSearch.service.jsx";
+import Notification from "../services/notification.service.jsx";
 import { setUserAvatar, setUserAbout, clearUser } from "../features/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
@@ -22,7 +25,6 @@ const Layout = () => {
   const contextRef = useRef(null);
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [originalY, setOriginalY] = useState(null);
   const [fullName, setFullName] = useState("");
   const [dragStyle, setDragStyle] = useState("");
   const [barStyle, setBarStyle] = useState("");
@@ -32,12 +34,17 @@ const Layout = () => {
     x: 0,
     y: 0,
   });
+  const [contextGroup, setContextGroup] = useState({
+    show: false,
+    x: 0,
+    y: 0,
+  });
   const { userId, userName, userAvatar, userAbout } = useSelector(
-    (state) => state.user
+    (state) => state.user,
   );
   const { chatAction, statusAction } = useSelector((state) => state.layout);
   const [menuAnimation, setMenuAnimation] = useState(false);
-  const [statusClick, setStatusClick] = useState(false);
+  const [stateClick, setStateClick] = useState("message");
   const dispatch = useDispatch();
   const [editedAbout, setEditedAbout] = useState(userAbout);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -138,7 +145,6 @@ const Layout = () => {
     if (rect.left + menuWidth > viewportWidth) {
       positionX = rect.right - menuWidth;
     }
-    setOriginalY(positionY);
     setContextMenu({
       show: true,
       x: positionX,
@@ -175,7 +181,7 @@ const Layout = () => {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       setCameraLoading(false);
       const updated = response.data.data;
@@ -196,7 +202,7 @@ const Layout = () => {
         },
         {
           headers: { "Content-Type": "application/json" },
-        }
+        },
       );
       const updated = response.data.data;
       dispatch(setUserAbout({ userAbout: updated.about }));
@@ -213,7 +219,7 @@ const Layout = () => {
       { userId },
       {
         withCredentials: true,
-      }
+      },
     );
     if (response) {
       socket.disconnect();
@@ -222,19 +228,78 @@ const Layout = () => {
     }
   };
 
+  // open context menu
+  const openContextGroup = (event) => {
+    const rect = event.target.getBoundingClientRect();
+    let positionX = rect.left - 20;
+    let positionY = rect.top;
+    const menuHeight = 265; // Approximate height of context menu
+    const menuWidth = 268; // Approximate width of context menu
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    // Adjust vertically if overflowing bottom
+    if (rect.top + menuHeight > viewportHeight) {
+      positionY = rect.top - menuHeight;
+    }
+    // Adjust horizontally if overflowing right
+    if (rect.left + menuWidth > viewportWidth) {
+      positionX = rect.right - menuWidth;
+    }
+    setContextGroup({
+      show: true,
+      x: positionX,
+      y: positionY,
+    });
+    setMenuAnimation(false);
+    setTimeout(() => setMenuAnimation(true), 300);
+  };
+
+  // close context menu
+  const closeContextGroup = () => {
+    setContextGroup({
+      show: false,
+      x: 0,
+      y: 0,
+    });
+  };
+
+  // useeffect for contextMenu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (contextRef.current && !contextRef.current.contains(event.target)) {
+        closeContextGroup();
+      }
+    };
+
+    if (contextGroup.show) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [contextGroup.show]);
+
   const stateChange = (params) => {
     setState(params);
   };
 
   // Status upload system
   const statusUpload = () => {
-    setStatusClick(true);
+    setStateClick(true);
     stateChange("status");
   };
 
   const chat = () => {
-    setStatusClick(false);
+    setStateClick("message");
     stateChange("message");
+  };
+
+  const group = () => {
+    closeContextGroup();
+    setStateClick("groupSearch");
   };
 
   return (
@@ -248,6 +313,7 @@ const Layout = () => {
         <div className={`flex flex-col h-screen overflow-hidden ${dragStyle}`}>
           <div className="flex-1 relative">
             {/* ===================== DESKTOP (unchanged) ===================== */}
+
             <div className="hidden lg:flex h-full">
               {/* Logo */}
               <img
@@ -268,6 +334,20 @@ const Layout = () => {
                     <AiOutlineMessage
                       size={33}
                       onClick={() => stateChange("message")}
+                    />
+                  )}
+                </button>
+
+                {/* Group message */}
+                <button
+                  className="pl-[0.3rem] rounded-full hover:bg-gray-200"
+                  onClick={() => group()}>
+                  {state === "groupMessage" ? (
+                    <MdGroup size={33} className="text-[#4337e6]" />
+                  ) : (
+                    <MdOutlineGroup
+                      size={33}
+                      onClick={() => stateChange("groupMessage")}
                     />
                   )}
                 </button>
@@ -293,11 +373,7 @@ const Layout = () => {
                   ) : (
                     <AiOutlineNotification
                       size={33}
-                      onClick={() =>
-                        alert(
-                          "The notification feature will be available within one week"
-                        )
-                      }
+                      onClick={() => stateChange("notification")}
                     />
                   )}
                 </button>
@@ -314,12 +390,37 @@ const Layout = () => {
                 </div>
               </div>
 
-              {/* Search / Status */}
-
+              {/* Left side of layout */}
               <div
                 style={{ width: `${searchbarWidth - 3.5}%` }}
-                className="ml-[2.5rem] mt-[1rem]">
-                {statusClick ? <StatusUpload /> : <Search />}
+                className="">
+                {stateClick === "message" && (
+                  <div className="ml-[2rem]">
+                    <div className="flex justify-end mt-[1.7rem]">
+                      <button
+                        className="p-1 rounded-full hover:bg-gray-200 mr-[0.5rem]"
+                        onClick={(e) => openContextGroup(e)}>
+                        <MdMoreVert size={27} />
+                      </button>
+                    </div>
+                    <Search />
+                  </div>
+                )}
+                {stateClick === "status" && (
+                  <div>
+                    <StatusUpload />
+                  </div>
+                )}
+                {stateClick === "groupSearch" && (
+                  <div>
+                    <GroupSearch />
+                  </div>
+                )}
+                {stateClick === "Notification" && (
+                  <div>
+                    <Notification />
+                  </div>
+                )}
               </div>
 
               {/* Drag bar */}
@@ -333,7 +434,9 @@ const Layout = () => {
                 <Outlet />
               </div>
             </div>
+
             {/* ===================== MOBILE ===================== */}
+
             <div className="lg:hidden flex flex-col h-full">
               {/* Top bar */}
               <div className={`${list ? "hidden" : "visible"} `}>
@@ -347,7 +450,7 @@ const Layout = () => {
 
               {/* Search / Status full width */}
               <div className={`${list ? "hidden" : "visible"} p-2`}>
-                {statusClick ? <StatusUpload /> : <Search />}
+                {stateClick ? <StatusUpload /> : <Search />}
               </div>
 
               {/* Outlet middle */}
@@ -396,7 +499,7 @@ const Layout = () => {
                       size={33}
                       onClick={() =>
                         alert(
-                          "The notification feature will be available within one week"
+                          "The notification feature will be available within one week",
                         )
                       }
                     />
@@ -521,6 +624,7 @@ const Layout = () => {
                 </button>
               </div>
             )}
+            {}
             {showFullImage && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[9999]"
@@ -530,6 +634,25 @@ const Layout = () => {
                   alt="Full Profile"
                   className="max-w-full max-h-full object-contain rounded-none"
                 />
+              </div>
+            )}
+            {contextGroup.show && (
+              <div
+                ref={contextRef}
+                className={`absolute rounded-xl w-[13rem] h-[16rem] p-4 z-50 shadow-2xl border 
+                 bg-slate-400 transition-all duration-300 ease-out
+                 ${
+                   menuAnimation
+                     ? "opacity-100 translate-y-0"
+                     : "opacity-0 -translate-y-6"
+                 }`}
+                style={{
+                  top: contextGroup.y,
+                  left: contextGroup.x,
+                }}
+                onClick={(e) => e.stopPropagation()}>
+                {/* Profile section */}
+                <button onClick={group}>New Group</button>
               </div>
             )}
           </div>
