@@ -2,36 +2,43 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { Message } from "../models/Message.models.js";
+import { GroupMessage } from "../models/groupMessage.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import { transporter } from "../sendOTP.js";
 import { v4 as uuidv4 } from "uuid";
 import { Status } from "../models/Status.model.js";
+import mongoose from "mongoose";
+import { Otp } from "../models/Otp.models.js";
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
+
     const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
-
     return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
-      "Something went wrong while generating referesh and access token"
+      "Something went wrong while generating referesh and access token",
     );
   }
 };
 
 const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  console.log("Emails", email);
-
   if (!email) return res.status(400).json({ message: "Email is required!" });
+
+  const user = await User.findOne({ email });
+  if (user) return res.status(400).json({
+    message: "This email already has an account"
+  });
+
   const generateOTP = () =>
     Math.floor(100000 + Math.random() * 900000).toString();
   const otp = generateOTP();
@@ -41,16 +48,15 @@ const sendOtp = asyncHandler(async (req, res) => {
     subject: "Your OTP Code",
     text: `Your OTP is ${otp}.`,
   };
-  console.log("Work1");
   try {
     transporter.sendMail(mailOptions);
-    console.log("Work2");
+    const OTP = await Otp.create({
+      OTP: otp,
+      email: email
+    })
     const responseData = {
-      message: `OTP sent successfully to ${email}`,
-      otp,
-      email,
+      id: OTP._id,
     };
-    console.log("✅ Response Data:", responseData); // Debugging
     return res
       .status(201)
       .json(new ApiResponse(200, responseData, "Send otp successfully"));
@@ -59,28 +65,56 @@ const sendOtp = asyncHandler(async (req, res) => {
   }
 });
 
+const verifyOtp = asyncHandler(async (req, res) => {
+
+  const { id, otp } = req.body;
+  const Id = await Otp.findById(id);
+  let verified;
+
+  if (Id.OTP === otp) {
+    verified = 1;
+  } else {
+    verified = 0;
+  }
+  return res
+    .status(201)
+    .json(new ApiResponse(200, verified, "User registered Successfully"));
+})
+
 const registerUser = asyncHandler(async (req, res) => {
+
   const { fullName, email, userName, password, about } = req.body;
+
   if (
     [fullName, email, userName, password].some((field) => field?.trim() === "")
   ) {
-    throw new ApiError(400, "All fields are required");
+    // throw new ApiError(400, "All fields are required");
   }
-  console.log(userName);
 
   const existedUser = await User.findOne({
     $or: [{ userName }, { email }],
   });
+
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+  // backend validation
+  if (!passwordRegex.test(password)) {
+    console.log("WORK1");
+
+    return res.status(400).json({
+      message: "Weak Password"
+    });
+  }
+  console.log("WORK2");
 
   if (existedUser) {
     throw new ApiError(409, "User with email or username already exists");
   }
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  console.log("Avatar", avatarLocalPath);
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  console.log("AvatarURL", avatar);
 
   const googleId = uuidv4();
 
@@ -95,7 +129,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
 
   if (!createdUser) {
@@ -103,7 +137,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id
+    user._id,
   );
 
   const options = {
@@ -119,14 +153,19 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User registered Successfully"));
 });
 
-
 const loginUser = asyncHandler(async (req, res) => {
   const { email, userName, password } = req.body;
   if (!userName && !email) {
     throw new ApiError(400, "username or email is required");
   }
+
+  const orConditions = [];
+
+  if (userName) orConditions.push({ userName });
+  if (email) orConditions.push({ email });
+
   const user = await User.findOne({
-    $or: [{ userName }, { email }],
+    $or: orConditions,
   });
   if (!user) {
     throw new ApiError(404, "User does not exist");
@@ -136,12 +175,12 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid user credentials");
   }
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id
+    user._id,
   );
   if (!accessToken || !refreshAccessToken)
     throw new ApiError(400, "Accesstoken and refreshtoken did'nt generate");
   const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken",
   );
   const options = {
     httpOnly: true,
@@ -161,9 +200,35 @@ const loginUser = asyncHandler(async (req, res) => {
           accessToken,
           refreshToken,
         },
-        "User logged In Successfully"
-      )
+        "User logged In Successfully",
+      ),
     );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  await User.findByIdAndUpdate(
+    _id,
+    {
+      $unset: {
+        refreshToken: 1, // this removes the field from document
+      },
+    },
+    {
+      new: true,
+    },
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
 const statusUpload = asyncHandler(async (req, res) => {
@@ -202,8 +267,8 @@ const statusUpload = asyncHandler(async (req, res) => {
         userData,
         existingStatus
           ? "All status files fetched successfully"
-          : "Status uploaded successfully"
-      )
+          : "Status uploaded successfully",
+      ),
     );
 });
 
@@ -215,25 +280,25 @@ const statusShow = asyncHandler(async (req, res) => {
   }
   const userStatuses = await Status.find({ "uploader.id": userId }).lean();
   const usersData = userStatuses.flatMap((item) =>
-    item.status.map((s) => s.file)
+    item.status.map((s) => s.file),
   );
   const friendsData = user?.otherUsers?.length
     ? await Promise.all(
-        user.otherUsers.map(async (friend) => {
-          const friendStatuses = await Status.find({
-            "uploader.id": friend.id,
-          }).lean();
-          if (!friendStatuses.length) return null;
-          const name = friendStatuses[0].uploader.name;
-          const files = friendStatuses.flatMap((item) =>
-            item.status.map((s) => s.file)
-          );
-          return {
-            friendName: name,
-            statuses: files,
-          };
-        })
-      )
+      user.otherUsers.map(async (friend) => {
+        const friendStatuses = await Status.find({
+          "uploader.id": friend.id,
+        }).lean();
+        if (!friendStatuses.length) return null;
+        const name = friendStatuses[0].uploader.name;
+        const files = friendStatuses.flatMap((item) =>
+          item.status.map((s) => s.file),
+        );
+        return {
+          friendName: name,
+          statuses: files,
+        };
+      }),
+    )
     : [];
   return res
     .status(200)
@@ -241,8 +306,8 @@ const statusShow = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { usersData, friendsData },
-        "User and friends' statuses"
-      )
+        "User and friends' statuses",
+      ),
     );
 });
 
@@ -266,35 +331,9 @@ const setPassword = asyncHandler(async (req, res) => {
         avatar: user.avatar,
         about: user.about,
       },
-      "Password was changed successfully"
-    )
+      "Password was changed successfully",
+    ),
   );
-});
-
-const logoutUser = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
-  await User.findByIdAndUpdate(
-    userId,
-    {
-      $unset: {
-        refreshToken: 1, // this removes the field from document
-      },
-    },
-    {
-      new: true,
-    }
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-
-  return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
 const profilePicChange = asyncHandler(async (req, res) => {
@@ -354,7 +393,7 @@ const searchUser = asyncHandler(async (req, res) => {
         "users.id": userId,
         "users.id": { $in: userIds },
         "messages.0": { $exists: true },
-      }).sort({ "messages.timestamp": -1 });
+      }).sort({ "messages.timestamp": 1 });
       let processedUserIds = new Set();
 
       chatRooms.forEach((chat) => {
@@ -442,34 +481,187 @@ const userList = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-  if (incomingRefreshToken) console.log(incomingRefreshToken);
-  else throw new ApiError("Did not find refreshtoken ");
-  console.log("Work", incomingRefreshToken);
+    req.cookies.refreshToken;
+
+  if (incomingRefreshToken) { throw new ApiError(401, "Refresh token expired"); }
 
   try {
     const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-    const user = await User.findById(decodedToken?._id);
+
+    const user = await User.findById(decodedToken._id);
+
     if (!user) {
       throw new ApiError(401, "Invalid refresh token");
     }
-    if (incomingRefreshToken !== user?.refreshToken) {
-      throw new ApiError(401, "Refresh token is expired or used");
+
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new ApiError(401, "Refresh token expired or already used");
     }
+
+    // Generate NEW tokens
+    const { accessToken, refreshToken } =
+      await generateAccessAndRefereshTokens(user._id);
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+    };
+
     return res
       .status(200)
-      .json(new ApiResponse(200, user, "Access token refreshed"));
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(200, { accessToken }, "Access token refreshed")
+      );
   } catch (error) {
-    throw new ApiError(401, error?.message || "Invalid refresh token");
+    throw new ApiError(401, error.message || "Invalid refresh token");
+  }
+});
+
+const friends = asyncHandler(async (req, res) => {
+  const { userId } = req.query;
+  console.log("GROU");
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, null, "User ID is required"));
+  }
+
+  const user = await User.findById(userId).select("otherUsers");
+
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, null, "User not found"));
+  }
+
+  // Filter only friends and map required fields
+
+  const friendsList = (user.otherUsers || [])
+    .filter((friend) => friend.relation === "friend")
+    .map((friend) => ({
+      id: friend.id,
+      fullName: friend.fullName,
+      avatar: friend.avatar,
+      about: friend.about,
+    }));
+  console.log("friend", friendsList);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, friendsList, "Friends retrieved successfully"));
+});
+
+const createGroup = asyncHandler(async (req, res) => {
+  const {
+    userId,
+    userName,
+    userAvatar,
+    userAbout,
+    groupMembers,
+    groupName,
+    groupAbout,
+  } = req.body;
+
+  const avatarLocalPath = req.files?.groupAvatar[0]?.path;
+  console.log("avatar", avatarLocalPath);
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  // Creator (Admin)
+  const creatorMember = {
+    id: userId,
+    name: userName,
+    avatar: userAvatar,
+    about: typeof userAbout === "string" ? userAbout : "",
+    role: "admin",
+  };
+  let parsedGroupMembers = groupMembers;
+
+  if (typeof groupMembers === "string") {
+    parsedGroupMembers = JSON.parse(groupMembers);
+  }
+
+  // Other members (Participants)
+  const formattedMembers = parsedGroupMembers.map((member) => ({
+    id: member.id,
+    name: member.fullName,
+    avatar: member.avatar,
+    about: typeof member.about === "string" ? member.about : "",
+    role: "participant",
+  }));
+
+  // Combine creator + members
+  const allMembers = [creatorMember, ...formattedMembers];
+
+  // Create group
+  const group = await GroupMessage.create({
+    creator: userId, // schema field
+    groupName,
+    groupAvatar: avatar?.url || "",
+    groupAbout,
+    groupMembers: allMembers,
+  });
+  console.log("groupcreated", group);
+
+  res.status(201).json(group);
+});
+
+const groupMessage = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    const chatRooms = await GroupMessage.find({
+      "groupMembers.id": new mongoose.Types.ObjectId(userId),
+    }).sort({ updatedAt: -1 });
+
+    console.log("CR", chatRooms);
+
+    const userData = chatRooms.map((chat) => {
+      const lastMessage =
+        chat.messages && chat.messages.length > 0
+          ? chat.messages[chat.messages.length - 1]
+          : null;
+      console.log(lastMessage);
+      return {
+        groupId: chat._id,
+        groupName: chat.groupName,
+        groupAvatar: chat.groupAvatar,
+        groupAbout: chat.groupAbout,
+        groupMembers: chat.groupMembers,
+        lastMessage: lastMessage
+          ? {
+            text: lastMessage.text || null,
+            file: lastMessage.file || null,
+            sender: lastMessage.sender
+              ? {
+                name: lastMessage.sender.name,
+              }
+              : null,
+          }
+          : null,
+      };
+    });
+
+    res.json(userData);
+  } catch (error) {
+    console.error("GroupMessage Error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 export {
   registerUser,
   sendOtp,
+  verifyOtp,
   loginUser,
   logoutUser,
   setPassword,
@@ -480,4 +672,7 @@ export {
   statusUpload,
   statusShow,
   refreshAccessToken,
+  friends,
+  createGroup,
+  groupMessage,
 };

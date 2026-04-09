@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   sendOtp,
+  verifyOtp,
   registerUser,
   loginUser,
   logoutUser,
@@ -10,8 +11,11 @@ import {
   profileAboutChange,
   userList,
   statusUpload,
-    statusShow,
+  statusShow,
   refreshAccessToken,
+  groupMessage,
+  friends,
+  createGroup,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -19,6 +23,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.route("/otp").post(sendOtp);
+router.route("/verify").post(verifyOtp);
 router.route("/register").post(
   upload.fields([
     {
@@ -30,11 +35,12 @@ router.route("/register").post(
       maxCount: 1,
     },
   ]),
-  registerUser
+  registerUser,
 );
 router.route("/login").post(loginUser);
-router.route("/passwordChange").post(setPassword);
+
 router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/passwordChange").post(verifyJWT, setPassword);
 router.route("/status").post(
   upload.fields([
     {
@@ -42,13 +48,24 @@ router.route("/status").post(
       maxCount: 1,
     },
   ]),
-  statusUpload
+  verifyJWT,
+  statusUpload,
 );
-router.post("/profilePicChange", upload.single("avatar"), profilePicChange);
-router.post("/profileAboutChange", profileAboutChange);
-router.route("/searchUser").get(searchUser);
-router.route("/userList").get(userList);
-router.route("/statusShow").post(statusShow);
+router.post("/profilePicChange", upload.single("avatar"), verifyJWT, profilePicChange);
+router.post("/profileAboutChange", verifyJWT, profileAboutChange);
+router.route("/searchUser").get(verifyJWT, searchUser);
+router.route("/userList").get(verifyJWT, userList);
+router.route("/statusShow").post(verifyJWT, statusShow);
 router.route("/refresh-token").post(refreshAccessToken);
-
+router.route("/createGroup").post(
+  upload.fields([
+    {
+      name: "groupAvatar",
+      maxCount: 1,
+    },
+  ]), verifyJWT,
+  createGroup,
+);
+router.route("/groupMessage").get(verifyJWT, groupMessage);
+router.route("/friends").get(verifyJWT, friends);
 export default router;
