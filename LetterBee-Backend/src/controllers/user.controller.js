@@ -488,7 +488,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   try {
     const decodedToken = jwt.verify(
       incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET
+      process.env.REFRESH_TOKEN_SECRET,
     );
 
     const user = await User.findById(decodedToken._id);
@@ -521,39 +521,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new ApiError(401, error.message || "Invalid refresh token");
   }
-});
-
-const friends = asyncHandler(async (req, res) => {
-  const { userId } = req.query;
-  console.log("GROU");
-
-  if (!userId) {
-    return res
-      .status(400)
-      .json(new ApiResponse(400, null, "User ID is required"));
-  }
-
-  const user = await User.findById(userId).select("otherUsers");
-
-  if (!user) {
-    return res.status(404).json(new ApiResponse(404, null, "User not found"));
-  }
-
-  // Filter only friends and map required fields
-
-  const friendsList = (user.otherUsers || [])
-    .filter((friend) => friend.relation === "friend")
-    .map((friend) => ({
-      id: friend.id,
-      fullName: friend.fullName,
-      avatar: friend.avatar,
-      about: friend.about,
-    }));
-  console.log("friend", friendsList);
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, friendsList, "Friends retrieved successfully"));
 });
 
 const createGroup = asyncHandler(async (req, res) => {
@@ -656,6 +623,39 @@ const groupMessage = asyncHandler(async (req, res) => {
     console.error("GroupMessage Error:", error);
     res.status(500).json({ error: "Server error" });
   }
+});
+
+const friends = asyncHandler(async (req, res) => {
+  const { userId } = req.query;
+  console.log("GROU");
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json(new ApiResponse(400, null, "User ID is required"));
+  }
+
+  const user = await User.findById(userId).select("otherUsers");
+
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, null, "User not found"));
+  }
+
+  // Filter only friends and map required fields
+
+  const friendsList = (user.otherUsers || [])
+    .filter((friend) => friend.relation === "friend")
+    .map((friend) => ({
+      id: friend.id,
+      fullName: friend.fullName,
+      avatar: friend.avatar,
+      about: friend.about,
+    }));
+  console.log("friend", friendsList);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, friendsList, "Friends retrieved successfully"));
 });
 
 export {

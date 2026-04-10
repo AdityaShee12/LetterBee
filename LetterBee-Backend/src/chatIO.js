@@ -24,7 +24,8 @@ const io = new Server(server, {
   },
 });
 
-let users = {};
+let users = {},
+  groups = {};
 
 io.on("connection", (socket) => {
 
@@ -85,8 +86,11 @@ io.on("connection", (socket) => {
       }
       const otherUsers = await User.findById(userId);
 
+<<<<<<< HEAD
       console.log("usersoth", otherUsers);
 
+=======
+>>>>>>> 443d633a0449f716b0c49857be001897e1d6840e
       const userList = Array.isArray(otherUsers?.otherUsers)
         ? otherUsers.otherUsers
         : [];

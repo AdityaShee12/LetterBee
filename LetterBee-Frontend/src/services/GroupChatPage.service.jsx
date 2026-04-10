@@ -164,6 +164,7 @@ const GroupChatPage = () => {
       }, 2000);
     });
 
+<<<<<<<< HEAD:LetterBee-Frontend/src/services/GroupChatPage.service.jsx
     socket.on("receive groupMessage", (data) => {
       const { senderId, identifier, fileName, fileType, fileData, sms } = data;
 
@@ -212,6 +213,31 @@ const GroupChatPage = () => {
             fileURL,
           },
         ]);
+      }
+    });
+
+    socket.on("requestSender", (data) => {
+      console.log("DONG");
+
+      if (data) {
+        setRequestSender("receiver");
+========
+    socket.on("storedSms", (data) => {
+      const { identifier, file, text } = data;
+      let message =
+        typeof text === "string" && !text.startsWith("http")
+          ? decryptMessage(text)
+          : text;
+      let fileURL = null;
+      let fileName = null;
+      let fileType = null;
+
+      if (file && file.fileData && file.fileType) {
+        // For images, videos, pdf, etc.
+        fileURL = `data:${file.fileType};base64,${file.fileData}`;
+        fileName = file.fileName || null;
+        fileType = file.fileType || null;
+>>>>>>>> 443d633a0449f716b0c49857be001897e1d6840e:LetterBee-Frontend/src/services/chat.service.jsx
       }
     });
 
@@ -1025,6 +1051,20 @@ const GroupChatPage = () => {
             ref={chatContainerRef}
             className="lg:max-h-[77vh] max-h-[82.5vh] min-h-[72vh] overflow-y-auto p-4"
             style={{ backgroundImage: "url(/dtheme.png)" }}>
+            <div className="bg-yellow-400">
+              {" "}
+              {requestState === "friend" && (
+                <div>
+                  {" "}
+                  {requestSender === "receiver" ? (
+                    <div>{userName} accepted your friendrequest .</div>
+                  ) : (
+                    <div>You accepted {receiverName}'s friendrequest .</div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {messages.map((msg, index) => (
               <div
                 key={index}
@@ -1175,6 +1215,87 @@ const GroupChatPage = () => {
             </div>
           )}
           {/* Footer */}
+<<<<<<<< HEAD:LetterBee-Frontend/src/services/GroupChatPage.service.jsx
+========
+          {/* No friend */}
+          {requestState === "noFriend" && (
+            <div className="flex flex-col items-center gap-[0.7rem]">
+              <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
+                If you want chatting with {receiverName} then first you need to
+                send request
+              </div>
+              <button
+                onClick={sendRequest}
+                className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                Send Request
+              </button>
+            </div>
+          )}{" "}
+          {/* Sending request */}
+          {requestState === "sent" && (
+            <div>
+              {participantType === "sender" ? (
+                <div className="flex justify-center">
+                  {" "}
+                  <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
+                    You sent friend request to {receiverName}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-[0.3rem]">
+                  <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
+                    {receiverName} sent friend request to you
+                  </div>
+                  <div className="flex gap-[3rem] px-5 pt-[0.5rem] text-4xl">
+                    <button
+                      onClick={() => {
+                        const accept = 1;
+                        replyRequest(accept);
+                      }}
+                      className="bg-[#4337e6] text-white w-[8rem] h-[3rem] rounded-md">
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => {
+                        const accept = 0;
+                        replyRequest(accept);
+                      }}
+                      className="bg-yellow-700 text-white w-[8rem] h-[3rem] rounded-md">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              )}{" "}
+            </div>
+          )}
+          {/* Rejection code */}
+          {requestState === "reject" && (
+            <div>
+              {participantType === "sender" ? (
+                <div className="flex flex-col items-center gap-[0.7rem]">
+                  {" "}
+                  <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
+                    You rejected friendrequest of {receiverName}
+                  </div>
+                  <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
+                    If you want chatting with {receiverName} then first you need
+                    to send request
+                    <button
+                      onClick={sendRequest}
+                      className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
+                      Send Request
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-yellow-100 text-white w-[8rem] h-[2rem] rounded-md">
+                  {receiverName} rejected your friendrequest
+                </div>
+              )}
+            </div>
+          )}
+          {/* Friend */}
+>>>>>>>> 443d633a0449f716b0c49857be001897e1d6840e:LetterBee-Frontend/src/services/chat.service.jsx
           {/* Type bar for sending sms*/}
           <div className="relative flex items-center h-[4rem]">
             {file && (
