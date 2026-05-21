@@ -1,59 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  userId: "",
-  userName: "",
-  userAvatar: "",
-  userAbout: "",
-  selectUser: {
-    receiverId: "",
-    receiverName: "",
-    receiverAvatar: "",
-    receiverAbout: "",
-  },
-  statusAction: null,
-};
+  user: "", selectUser: ""
+}
 
 const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUserId: (state, action) => {
-      state.userId = action.payload.userId;
-    },
-    setUserName: (state, action) => {
-      state.userName = action.payload.userName;
-    },
-    setUserAvatar: (state, action) => {
-      state.userAvatar = action.payload.userAvatar;
-    },
-    setUserAbout: (state, action) => {
-      state.userAbout = action.payload.userAbout;
+    setUser: (state, action) => {
+      state.user = action.payload;
     },
     setSelectUser: (state, action) => {
-      state.selectUser.receiverId = action.payload.receiverId;
-      state.selectUser.receiverName = action.payload.receiverName;
-      state.selectUser.receiverAvatar = action.payload.receiverAvatar;
-      state.selectUser.receiverAbout = action.payload.receiverAbout;
+      state.selectUser = action.payload;
     },
     clearUser: (state) => {
-      state.userId = "";
-      state.userName = "";
-      state.userAvatar = "";
-      state.userAbout = "";
-      state.selectUser.receiverId = "";
-      state.selectUser.receiverName = "";
-      state.selectUser.receiverAvatar = "";
+      state.user = null;
     },
   },
 });
 
 export const {
-  setUserId,
-  setUserName,
-  setUserAvatar,
-  setUserAbout,
-  setSelectUser,
-  clearUser,
+  setUser, setSelectUser, clearUser
 } = userSlice.actions;
 export default userSlice.reducer;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import CryptoJS from "crypto-js";
-import socket from "../socket.js";
+import socket from "../sockets/socket.js";
 import { AiOutlinePhone, AiOutlineVideoCamera } from "react-icons/ai";
 import { FiSend, FiPaperclip, FiX } from "react-icons/fi";
 import { v4 as uuidv4 } from "uuid";
@@ -18,18 +18,12 @@ const configuration = {
 };
 
 const ChatService = () => {
+  const [receiverAvatar, setReceiverAvatar] = useState("");
+  const [receiverName, setReceiverName] = useState("");
   const [state, setState] = useState("offline");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [file, setFile] = useState(null);
-  const {
-    userId,
-    userName,
-    userAvatar,
-    selectUser: { receiverId, receiverName, receiverAvatar, receiverAbout },
-  } = useSelector((state) => state.user);
-  console.log("receiverName", receiverName);
-
   const secretKey = "0123456789abcdef0123456789abcdef";
   const iv = "abcdef9876543210abcdef9876543210";
   const chatContainerRef = useRef(null);
@@ -64,7 +58,6 @@ const ChatService = () => {
   let pressTimer = null;
   const [profileDetails, setproFileDetails] = useState(false);
   const profileRef = useRef(null);
-  const [about, setAbout] = useState("");
   const [phoneNumber, setPhoneNumber] = useState();
   const [activeSection, setActiveSection] = useState("profile");
   const [isZoomed, setIsZoomed] = useState(false);
@@ -78,7 +71,35 @@ const ChatService = () => {
   const dragStart = useRef({ x: 0, y: 0 });
   const [requestSender, setRequestSender] = useState("sender");
 
-  // 
+  const [senderId, setSenderId] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [userName, setUserName] = useState("");
+  const [email, setEmail] = useState();
+  const [avatar, setAvatar] = useState("");
+  const [about, setAbout] = useState("");
+  const { user } = useSelector(
+    (state) => state.user,
+  );
+  const { selectUser } = useSelector(
+    (state) => state.user,
+  );
+
+  useEffect(() => {
+    const { _id, email, fullName, userName, avatar, about } = user;
+    setSenderId(_id);
+    setAvatar(avatar);
+    setFullName(fullName);
+    setEmail(email);
+    setUserName(userName);
+    setAbout(about);
+  }, [user]);
+
+  useEffect(() => {
+    const { _id, email, fullName, userName, avatar, about } = selectUser;
+
+  }, [selectUser]);
+
+  // StartDrag
   const startDrag = (e) => {
     e.preventDefault();
     const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
@@ -300,8 +321,6 @@ const ChatService = () => {
     });
 
     socket.on("requestSender", (data) => {
-      console.log("DONG");
-
       if (data) {
         setRequestSender("receiver");
         socket.on("storedSms", (data) => {
@@ -313,7 +332,6 @@ const ChatService = () => {
           let fileURL = null;
           let fileName = null;
           let fileType = null;
-
           if (file && file.fileData && file.fileType) {
             // For images, videos, pdf, etc.
             fileURL = `data:${file.fileType};base64,${file.fileData}`;
@@ -331,8 +349,10 @@ const ChatService = () => {
               fileURL,
             },
           ]);
-        }
-    });
+        })
+      }
+    }
+    );
 
     socket.on("requestSender", (data) => {
       console.log("DONG");
@@ -1434,662 +1454,6 @@ const ChatService = () => {
 
     </div>
   );
+}
 
-  export default ChatService;
-
-//               return (
-//     <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem] bg-transparent min-h-screen w-full relative z-10">
-
-//       {/* ─── Header / Profile bar ─── */}
-//       <div
-//         className="flex justify-between items-center w-full rounded-xl h-[4.5rem] cursor-pointer
-//                  bg-white/5 border border-white/10 px-3 sticky top-0 z-30
-//                  backdrop-blur-xl"
-//         onClick={(e) => openProfileContext(e)}
-//       >
-//         {/* Avatar + Name + Status */}
-//         <div className="flex items-center gap-3">
-//           {/* Avatar with online dot */}
-//           <div className="relative">
-//             <img
-//               src={receiverAvatar}
-//               alt=""
-//               className="w-11 h-11 rounded-full object-cover border border-white/10"
-//             />
-//             <span
-//               className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0d0d0f]
-//               ${state === "Online" ? "bg-emerald-400" : "bg-white/30"}`}
-//             />
-//           </div>
-
-//           {/* Name + status */}
-//           <div className="flex flex-col justify-center">
-//             <h2 className="text-[0.95rem] font-semibold leading-tight text-slate-100">
-//               {receiverName}
-//             </h2>
-//             <p className={`text-xs flex items-center gap-1 font-medium
-//             ${state === "Online" ? "text-emerald-400" : "text-slate-500"}`}>
-//               <span className={`inline-block w-1.5 h-1.5 rounded-full
-//               ${state === "Online" ? "bg-emerald-400" : "bg-slate-500"}`} />
-//               {state === "Online" ? "Online" : `${state}`}
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* Video Camera icon */}
-//         <div
-//           className="w-9 h-9 flex items-center justify-center rounded-xl
-//                    bg-white/10 border border-white/10 text-white/60
-//                    hover:text-white hover:bg-white/20 transition-colors"
-//           onClick={(e) => {
-//             e.stopPropagation();
-//             alert("Video call feature will be available within one week");
-//           }}
-//         >
-//           <AiOutlineVideoCamera size={20} />
-//         </div>
-//       </div>
-
-//       {/* ─── Profile Details Panel ─── */}
-//       {profileDetails && (
-//         <div
-//           ref={profileRef}
-//           className="absolute z-10 w-[30rem] h-[29rem] shadow-2xl mt-[4rem]
-//                    rounded-2xl overflow-hidden border border-slate-700"
-//         >
-//           <div className="flex h-full">
-//             {/* Left sidebar */}
-//             <div className="flex flex-col pt-4 pl-4 gap-3 bg-slate-900 w-[8rem] border-r border-slate-700">
-//               {[
-//                 { label: "Overview", fn: overview },
-//                 { label: "Media", fn: media },
-//                 { label: "Links", fn: files },
-//                 { label: "Files", fn: links },
-//                 { label: "Groups", fn: groups },
-//               ].map(({ label, fn }) => (
-//                 <div
-//                   key={label}
-//                   onClick={(e) => fn(e)}
-//                   className="cursor-pointer text-sm text-slate-400 hover:text-orange-400
-//                            px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors"
-//                 >
-//                   {label}
-//                 </div>
-//               ))}
-//             </div>
-
-//             {/* Right content */}
-//             <div className="bg-slate-950 flex-1 overflow-y-auto">
-//               {activeSection === "profile" && (
-//                 <div>
-//                   <div className="flex flex-col items-center p-4 rounded-lg overflow-hidden">
-//                     {/* Profile Picture */}
-//                     <div className={`${isZoomed
-//                       ? "fixed bg-black flex justify-center items-center inset-0 z-50"
-//                       : "relative w-28 h-28"}`}
-//                     >
-//                       <div
-//                         className={`${isZoomed ? "absolute z-50 left-7 top-7 text-white" : "hidden"}`}
-//                         onClick={() => setIsZoomed(false)}
-//                       >
-//                         <IoArrowBack size={24} className="cursor-pointer" />
-//                       </div>
-
-//                       {isZoomed ? (
-//                         <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }} doubleClick={{ disabled: true }}>
-//                           <TransformComponent>
-//                             <img src={receiverAvatar} alt="profile" className="w-[48vw] h-[95vh]" />
-//                           </TransformComponent>
-//                         </TransformWrapper>
-//                       ) : (
-//                         <img
-//                           src={receiverAvatar}
-//                           alt=""
-//                           onClick={() => setIsZoomed(true)}
-//                           className="absolute w-28 h-28 rounded-full cursor-pointer
-//                                    ring-2 ring-orange-500/40 object-cover"
-//                         />
-//                       )}
-//                     </div>
-
-//                     {/* Name + status badge */}
-//                     <div className="flex items-center gap-2 mt-4">
-//                       <h2 className="text-xl font-bold text-slate-100">{receiverName}</h2>
-//                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-//                       ${state === "Online"
-//                           ? "bg-emerald-500/20 text-emerald-400"
-//                           : "bg-slate-700 text-slate-400"}`}>
-//                         {state === "Online" ? "● Online" : "● Offline"}
-//                       </span>
-//                     </div>
-
-//                     {/* Action buttons */}
-//                     <div className="flex justify-center gap-4 py-5 w-full">
-//                       <div
-//                         className="flex flex-col items-center justify-center gap-1 cursor-pointer
-//                                  bg-slate-800 border border-slate-700 rounded-xl w-[7rem] h-[4.5rem]
-//                                  hover:border-orange-500/40 hover:text-orange-400 transition-colors text-slate-400"
-//                         onClick={videoCallSystem}
-//                       >
-//                         <AiOutlineVideoCamera size={22} />
-//                         <p className="text-xs">Video</p>
-//                       </div>
-//                       <div
-//                         className="flex flex-col items-center justify-center gap-1 cursor-pointer
-//                                  bg-slate-800 border border-slate-700 rounded-xl w-[7rem] h-[4.5rem]
-//                                  hover:border-orange-500/40 hover:text-orange-400 transition-colors text-slate-400"
-//                         onClick={videoCallSystem}
-//                       >
-//                         <AiOutlinePhone size={22} className="rotate-90" />
-//                         <p className="text-xs">Audio</p>
-//                       </div>
-//                     </div>
-//                   </div>
-
-//                   {/* About */}
-//                   <div className="px-4 mb-4">
-//                     <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1">About</p>
-//                     <p className="text-sm text-slate-300">{receiverAbout}</p>
-//                   </div>
-
-//                   {/* Phone */}
-//                   <div className="px-4 mb-4">
-//                     <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1">Phone number</p>
-//                     <p className="text-sm text-slate-300">{phoneNumber}</p>
-//                   </div>
-
-//                   {/* Block / Report */}
-//                   <div className="flex justify-between px-4 gap-3 mb-4">
-//                     <button className="flex-1 py-2 text-sm rounded-xl bg-slate-800 border border-slate-700
-//                                      text-slate-400 hover:border-red-500/40 hover:text-red-400 transition-colors">
-//                       Block
-//                     </button>
-//                     <button className="flex-1 py-2 text-sm rounded-xl bg-slate-800 border border-slate-700
-//                                      text-slate-400 hover:border-orange-500/40 hover:text-orange-400 transition-colors">
-//                       Report contact
-//                     </button>
-//                   </div>
-//                 </div>
-//               )}
-//               {activeSection === "media" && <MediaComponent />}
-//               {activeSection === "files" && <FilesComponent />}
-//               {activeSection === "links" && <LinksComponent />}
-//               {activeSection === "groups" && <GroupsComponent />}
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
-//       {/* ─── Video Call System ─── */}
-//       {isVideo && (
-//         <div
-//           className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center transition-all duration-300
-//           ${isFullScreen ? "w-full h-full" : "w-[300px] h-[300px] rounded-2xl overflow-hidden"}`}
-//           onClick={() => setIsFullScreen(!isFullScreen)}
-//           onMouseDown={handleMouseDown}
-//           onMouseUp={handleMouseUp}
-//           onTouchStart={handleMouseDown}
-//           onTouchEnd={handleMouseUp}
-//         >
-//           <video
-//             ref={isSwapped ? localVideoRef : remoteVideoRef}
-//             autoPlay muted={isSwapped} playsInline
-//             className="absolute inset-0 w-full h-full object-cover"
-//           />
-//           <div
-//             ref={dragRef}
-//             className="absolute w-[120px] h-[120px] border-2 border-orange-500/60 rounded-xl overflow-hidden cursor-move"
-//             style={{ top: localVideoPos.y, left: localVideoPos.x }}
-//             onMouseDown={startDrag}
-//             onTouchStart={startDrag}
-//           >
-//             <video
-//               ref={isSwapped ? remoteVideoRef : localVideoRef}
-//               autoPlay muted={!isSwapped} playsInline
-//               className="w-full h-full object-cover"
-//             />
-//           </div>
-//         </div>
-//       )}
-
-//       {/* ─── Message Section ─── */}
-//       <div className="w-full bg-cover bg-center flex-1">
-//         <div className="flex flex-col w-full">
-
-//           {/* Chat messages */}
-//           <div
-//             ref={chatContainerRef}
-//             className="lg:max-h-[77vh] max-h-[82.5vh] min-h-[72vh] overflow-y-auto p-4 custom-scrollbar bg-transparent"
-//           >
-//             {/* Friend request accepted notice */}
-//             {requestState === "friend" && (
-//               <div className="flex justify-center mb-3">
-//                 <div className="bg-slate-800/80 border border-slate-700 text-slate-400
-//                               text-xs px-4 py-1.5 rounded-full backdrop-blur-sm">
-//                   {requestSender === "receiver"
-//                     ? `${receiverName} accepted your friend request.`
-//                     : `You accepted ${receiverName}'s friend request.`}
-//                 </div>
-//               </div>
-//             )}
-
-//             {messages.map((msg, index) => (
-//               <div
-//                 key={index}
-//                 className={`flex w-full mb-[0.5rem] ${msg.sender === "You" ? "justify-end" : "justify-start"}`}
-//               >
-//                 <div
-//                   className={`relative flex flex-col ${msg.sender === "You" ? "items-end" : "items-start"}`}
-//                   onContextMenu={(e) => openContextMenu(msg, e)}
-//                   style={{ width: "fit-content", maxWidth: "60%" }}
-//                 >
-//                   {msg.fileURL ? (
-//                     msg.fileType?.startsWith("image/") ? (
-//                       <img
-//                         src={msg.fileURL}
-//                         alt="Sent Image"
-//                         className="w-40 h-40 object-cover rounded-xl cursor-pointer ring-1 ring-slate-700"
-//                         onClick={() => setSelectedImage(msg.fileURL)}
-//                       />
-//                     ) : msg.fileType?.startsWith("video/") ? (
-//                       <video src={msg.fileURL} controls className="w-60 rounded-xl" />
-//                     ) : (
-//                       <a
-//                         href={msg.fileURL}
-//                         target="_blank"
-//                         rel="noopener noreferrer"
-//                         className="bg-slate-800 border border-slate-700 text-slate-200
-//                                  px-3 py-2 rounded-xl min-w-[80px] max-w-full break-words block
-//                                  hover:border-orange-500/40 transition-colors"
-//                       >
-//                         📄 {msg.fileName}
-//                       </a>
-//                     )
-//                   ) : null}
-
-//                   {msg.message && (
-//                     <div
-//                       className={`text-[0.95rem] px-4 py-2 min-w-[80px] shadow-sm backdrop-blur-md
-//                                 max-w-full break-words whitespace-pre-line mt-1 block
-//                       ${msg.sender === "You"
-//                           ? "bg-gradient-to-br from-[#4337e6] to-[#6d28d9] text-white rounded-2xl rounded-tr-sm shadow-[#4337e6]/20"
-//                           : "bg-white/10 border border-white/5 text-white/90 rounded-2xl rounded-tl-sm"}`}
-//                       style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
-//                     >
-//                       {msg.message}
-//                     </div>
-//                   )}
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-
-//           {/* ─── Context Menu ─── */}
-//           {contextMenu.show && (
-//             <div
-//               ref={contextRef}
-//               className="absolute z-10 min-w-[11rem] bg-slate-800 border border-slate-700
-//                        rounded-2xl p-2 shadow-2xl"
-//               style={{ left: contextMenu.x, top: contextMenu.y }}
-//             >
-//               <div
-//                 className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                          flex items-center gap-2 text-sm text-slate-200 transition-colors"
-//                 onClick={copyFunction}
-//               >
-//                 <FiCopy size={15} /> Copy
-//               </div>
-//               <div className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                             flex items-center gap-2 text-sm text-slate-200 transition-colors">
-//                 <FiStar size={15} /> Star
-//               </div>
-//               <div className="h-px bg-slate-700 my-1" />
-//               <div
-//                 className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                          flex items-center gap-2 text-sm text-red-400 transition-colors"
-//                 onClick={deleteFunction}
-//               >
-//                 <FiTrash2 size={15} /> Delete
-//               </div>
-//             </div>
-//           )}
-
-//           {/* ─── Delete Confirmation ─── */}
-//           {delFunc && (
-//             <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-//               <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-72 shadow-2xl text-center">
-//                 <div className="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30
-//                               flex items-center justify-center mx-auto mb-3">
-//                   <FiTrash2 size={18} className="text-red-400" />
-//                 </div>
-//                 <p className="text-slate-200 font-medium mb-4">Delete this message?</p>
-//                 {everyone ? (
-//                   <>
-//                     <button
-//                       className="w-full py-2.5 mb-2 text-sm text-red-400 rounded-xl
-//                                bg-slate-800 border border-slate-700 hover:border-red-500/40 transition-colors"
-//                       onClick={() => Delete("You")}
-//                     >
-//                       Delete for everyone
-//                     </button>
-//                     <button
-//                       className="w-full py-2.5 mb-2 text-sm text-slate-300 rounded-xl
-//                                bg-slate-800 border border-slate-700 hover:border-slate-500 transition-colors"
-//                       onClick={() => Delete("Me")}
-//                     >
-//                       Delete for me
-//                     </button>
-//                   </>
-//                 ) : (
-//                   <button
-//                     className="w-full py-2.5 mb-2 text-sm text-slate-300 rounded-xl
-//                              bg-slate-800 border border-slate-700 hover:border-slate-500 transition-colors"
-//                     onClick={() => Delete("Me1")}
-//                   >
-//                     Delete for me
-//                   </button>
-//                 )}
-//                 <button
-//                   className="w-full py-2.5 text-sm text-slate-500 rounded-xl
-//                            hover:bg-slate-800 transition-colors"
-//                   onClick={() => setDelFunc(false)}
-//                 >
-//                   Cancel
-//                 </button>
-//               </div>
-//             </div>
-//           )}
-
-//           {/* ─── Full Image Preview ─── */}
-//           {selectedImage && (
-//             <div
-//               className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50"
-//               onClick={() => setSelectedImage(null)}
-//             >
-//               <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }} doubleClick={{ disabled: true }}>
-//                 <TransformComponent>
-//                   <img src={selectedImage} alt="Full Size" className="max-w-full max-h-full rounded-xl" />
-//                 </TransformComponent>
-//               </TransformWrapper>
-//             </div>
-//           )}
-
-//           {/* ─── Footer States ─── */}
-
-//           {/* No friend */}
-//           {requestState === "noFriend" && (
-//             <div className="flex flex-col items-center gap-3 py-4">
-//               <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//                 If you want to chat with <span className="text-slate-200 font-medium">{receiverName}</span>,
-//                 you need to send a friend request first.
-//               </div>
-//               <button
-//                 onClick={sendRequest}
-//                 className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                          text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//               >
-//                 Send Request
-//               </button>
-//             </div>
-//           )}
-
-//           {/* Sent request */}
-//           {requestState === "sent" && (
-//             <div className="py-4">
-//               {participantType === "sender" ? (
-//                 <div className="flex justify-center">
-//                   <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                                 text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//                     You sent a friend request to <span className="text-slate-200 font-medium">{receiverName}</span>.
-//                   </div>
-//                 </div>
-//               ) : (
-//                 <div className="flex flex-col items-center gap-3">
-//                   <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                                 text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//                     <span className="text-slate-200 font-medium">{receiverName}</span> sent you a friend request.
-//                   </div>
-//                   <div className="flex gap-4">
-//                     <button
-//                       onClick={() => replyRequest(1)}
-//                       className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                                text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//                     >
-//                       Accept
-//                     </button>
-//                     <button
-//                       onClick={() => replyRequest(0)}
-//                       className="bg-slate-800 border border-slate-700 hover:border-red-500/40
-//                                text-red-400 font-semibold text-sm h-10 px-6 rounded-xl transition-colors"
-//                     ></button>
-//                     {/* Footer */}
-//                     {/* No friend */}
-//                     {requestState === "noFriend" && (
-//                       <div className="flex flex-col items-center gap-[0.7rem]">
-//                         <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
-//                           If you want chatting with {receiverName} then first you need to
-//                           send request
-//                         </div>
-//                         <button
-//                           onClick={sendRequest}
-//                           className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
-//                           Send Request
-//                         </button>
-//                       </div>
-//                     )}{" "}
-//                     {/* Sending request */}
-//                     {requestState === "sent" && (
-//                       <div>
-//                         {participantType === "sender" ? (
-//                           <div className="flex justify-center">
-//                             {" "}
-//                             <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
-//                               You sent friend request to {receiverName}
-//                             </div>
-//                           </div>
-//                         ) : (
-//                           <div className="flex flex-col items-center gap-[0.3rem]">
-//                             <div className="bg-yellow-100 max-w-[33rem] rounded-md text-center break-words">
-//                               {receiverName} sent friend request to you
-//                             </div>
-//                             <div className="flex gap-[3rem] px-5 pt-[0.5rem] text-4xl">
-//                               <button
-//                                 onClick={() => {
-//                                   const accept = 1;
-//                                   replyRequest(accept);
-//                                 }}
-//                                 className="bg-[#4337e6] text-white w-[8rem] h-[3rem] rounded-md">
-//                                 Accept
-//                               </button>
-//                               <button
-//                                 onClick={() => {
-//                                   const accept = 0;
-//                                   replyRequest(accept);
-//                                 }}
-//                                 className="bg-yellow-700 text-white w-[8rem] h-[3rem] rounded-md">
-//                                 Reject
-//                               </button>
-//                             </div>
-//                           </div>
-//                         )}
-//                       </div>
-//                     )}
-
-//                     {/* Rejected */}
-//                     {requestState === "reject" && (
-//                       <div className="py-4">
-//                         {participantType === "sender" ? (
-//                           <div className="flex flex-col items-center gap-3">
-//                             <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                                 text-sm rounded-xl text-center px-4 py-3">
-//                               You rejected <span className="text-slate-200 font-medium">{receiverName}</span>'s friend request.
-//                             </div>
-//                             <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                                 text-sm rounded-xl text-center px-4 py-3">
-//                               Send a new request to start chatting.
-//                             </div>
-//                             <button
-//                               onClick={sendRequest}
-//                               className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                              text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//                             >
-//                               Send Request
-//                             </button>
-//                           </div>
-//                         ) : (
-//                           <div className="flex justify-center">
-//                             <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                                 text-sm rounded-xl text-center px-4 py-3">
-//                               <span className="text-slate-200 font-medium">{receiverName}</span> rejected your friend request.
-//                             </div>
-//               )}
-//                           </div>
-//                         )}
-//                         {/* Rejection code */}
-//                         {requestState === "reject" && (
-//                           <div>
-//                             {participantType === "sender" ? (
-//                               <div className="flex flex-col items-center gap-[0.7rem]">
-//                                 {" "}
-//                                 <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
-//                                   You rejected friendrequest of {receiverName}
-//                                 </div>
-//                                 <div className="bg-[#4337e6] text-white max-w-[8rem] rounded-md break-words">
-//                                   If you want chatting with {receiverName} then first you need
-//                                   to send request
-//                                   <button
-//                                     onClick={sendRequest}
-//                                     className="bg-[#4337e6] text-white w-[8rem] h-[2rem] rounded-md">
-//                                     Send Request
-//                                   </button>
-//                                 </div>
-//                               </div>
-//                             ) : (
-//                               <div className="bg-yellow-100 text-white w-[8rem] h-[2rem] rounded-md">
-//                                 {receiverName} rejected your friendrequest
-//                               </div>
-//                             )}
-//                           </div>
-//                         )}
-
-//                         {/* ─── Message Input Bar ─── */}
-//                         {requestState === "friend" && (
-//                           <div className="relative flex items-center h-[4rem] gap-2 px-1">
-//                             {file && (
-//                               <div className="flex items-center gap-2 p-2 bg-white/10 border border-white/10 backdrop-blur-md
-//                               rounded-xl mb-2 absolute bottom-16 left-0">
-//                                 <img src={filePreview} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />
-//                                 <span className="truncate text-sm text-white max-w-[8rem]">{file.name}</span>
-//                                 <button onClick={() => { setFile(null); setFilePreview(null); }}>
-//                                   <FiX size={18} className="text-white/50 hover:text-white transition-colors" />
-//                                 </button>
-//                               </div>
-//                             )}
-
-//                             <button
-//                               onClick={() => fileInputRef.current?.click()}
-//                               className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0
-//                          bg-white/10 border border-white/10 text-white/60
-//                          hover:text-white hover:bg-white/20 transition-colors"
-//                             >
-//                               <FiPaperclip size={18} />
-//                             </button>
-
-//                             <input
-//                               type="file"
-//                               accept="image/*"
-//                               capture="environment"
-//                               ref={fileInputRef}
-//                               className="hidden"
-//                               onChange={handleFileChange}
-//                             />
-
-//                             <textarea
-//                               ref={messageInputRef}
-//                               value={message}
-//                               onChange={handleChange}
-//                               placeholder="Type a message…"
-//                               className="flex-1 bg-white/5 border border-white/10 text-white
-//                          placeholder-white/30 rounded-xl px-4 py-3 text-[0.95rem] resize-none
-//                          outline-none focus:bg-[#4337e6]/10 focus:border-[#4337e6]/50 transition-all leading-normal"
-//                               rows={1}
-//                               style={{ minHeight: "42px", maxHeight: "120px" }}
-//                               onKeyDown={(e) => {
-//                                 if (e.key === "Enter" && !e.shiftKey) {
-//                                   e.preventDefault();
-//                                   sendMessage();
-//                                 }
-//                               }}
-//                             />
-
-//                             <button
-//                               onClick={sendMessage}
-//                               className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0
-//                          bg-gradient-to-br from-[#4337e6] to-[#6d28d9] hover:opacity-90 active:scale-95
-//                          text-white transition-all shadow-lg shadow-[#4337e6]/30"
-//                             >
-//                               <FiSend size={17} />
-//                             </button>
-//                           </div>
-//                         )}
-//                         {/* Friend */}
-//                         {/* Type bar for sending sms*/}
-//                         <div className="relative flex items-center h-[4rem]">
-//                           {file && (
-//                             <div className="flex items-center p-2 bg-gray-100 rounded-lg mb-2">
-//                               <img
-//                                 src={filePreview}
-//                                 alt="Preview"
-//                                 className="w-12 h-12 object-cover rounded-lg"
-//                               />
-//                               <span className="truncate">{file.name}</span>
-//                               <button
-//                                 onClick={() => {
-//                                   setFile(null);
-//                                   setFilePreview(null);
-//                                 }}
-//                                 className="ml-2">
-//                                 <FiX size={20} className="text-gray-600 hover:text-red-500" />
-//                               </button>
-//                             </div>
-//                           )}
-//                           <button
-//                             onClick={() => fileInputRef.current?.click()}
-//                             className="absolute pl-[0.7rem] rounded-full hover:bg-gray-200 transition">
-//                             <FiPaperclip size={20} />
-//                           </button>
-//                           <input
-//                             type="file"
-//                             accept="image/*"
-//                             capture="environment"
-//                             ref={fileInputRef}
-//                             className="hidden"
-//                             onChange={handleFileChange}
-//                           />
-//                           <textarea
-//                             ref={messageInputRef}
-//                             value={message}
-//                             onChange={handleChange}
-//                             placeholder="Type a message..."
-//                             className="bg-slate-200 w-full h-[3.5rem] leading-[3.5rem] rounded-3xl pl-[2.7rem] text-[1.3rem] "
-//                             rows={1}
-//                             style={{ minHeight: "40px" }}
-//                             onKeyDown={(e) => {
-//                               if (e.key === "Enter" && !e.shiftKey) {
-//                                 e.preventDefault();
-//                                 sendMessage();
-//                               }
-//                             }}
-//                           />
-//                           <button
-//                             onClick={sendMessage}
-//                             className="p-1 rounded-full hover:bg-gray-200 transition">
-//                             <FiSend size={30} className="text-[#4337e6]" />
-//                           </button>
-//                         </div>
-//                       </div>
-//       </div>
-//                 </div>
-//               );}</div>)}
-// };
+export default ChatService;

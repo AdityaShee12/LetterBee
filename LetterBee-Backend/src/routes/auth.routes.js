@@ -1,27 +1,32 @@
-import express from "express";
-import passport from "passport";
+import { Router } from "express";
+import { sendOtp, verifyOtp } from "../controllers/auth/otp.controller.js";
+import { upload } from "../middlewares/upload/multer.middleware.js";
+import { verifyJWT } from "../middlewares/auth/auth.middleware.js";
+import { registerUser, loginUser, logoutUser, setPassword } from "../controllers/auth/auth.controller.js";
+import { refreshAccessToken } from "../controllers/auth/token.controller.js";
+import { validateRegister, validateLogin } from "../utils/validations/validateUser.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+router.route("/sendOTP").post(sendOtp);
+router.route("/verifyOTP").post(verifyOtp);
+router.route("/register").post(
+  upload.fields([
+    {
+      name: "avatar",
+      maxCount: 1,
+    },
+    {
+      name: "coverImage",
+      maxCount: 1,
+    },
+  ]),
+  validateRegister,
+  registerUser,
 );
-
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { session: false }),
-  (req, res) => {
-    if (!req.user)
-      return res.status(401).json({ message: "Google authentication failed" });
-
-    // Send JWT token in HTTP-only cookie
-    res.cookie("token", req.user.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-    });
-    res.redirect(process.env.CLIENT_URL);
-  }
-);
+router.route("/login").post(validateLogin, loginUser);
+router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/passwordChange").post(verifyJWT, setPassword);
+router.route("/refreshAccessToken").post(refreshAccessToken);
 
 export default router;

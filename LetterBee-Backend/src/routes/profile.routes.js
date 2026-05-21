@@ -1,10 +1,14 @@
-import express from "express";
-import verifyToken from "../middlewares/auth.js";
+import { Router } from "express";
+import {
+  profilePicChange,
+  profileAboutChange,
+} from "../controllers/user/profile.controller.js";
+import { upload } from "../middlewares/upload/multer.middleware.js";
+import { verifyJWT } from "../middlewares/auth/auth.middleware.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/profile", verifyToken, (req, res) => {
-  res.json({ message: "Profile data", user: req.user });
-});
+router.post("/profilePicChange", upload.single("avatar"), verifyJWT, profilePicChange);
+router.post("/profileAboutChange", verifyJWT, profileAboutChange);
 
 export default router;

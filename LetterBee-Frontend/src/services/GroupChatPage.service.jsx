@@ -138,11 +138,11 @@ const GroupChatPage = () => {
   }, []);
 
   // Handling state online or offline
-  useEffect(() => {
-    const recieverFunction = async () => {
+ useEffect(() => {
+    const receiverFunction = async () => {
       try {
         console.log("on1");
-        socket.emit("reciever add", {
+        socket.emit("receiver add", {
           userId,
           receiverId,
           receiverName,
@@ -151,34 +151,36 @@ const GroupChatPage = () => {
         console.log("RA Err", error);
       }
     };
-    recieverFunction();
+    receiverFunction();
 
     socket.on("state", (state) => setState(state));
 
     socket.on("checkDisconnect", (state) => {
       console.log("Cdisco");
-
       setState(state);
       setTimeout(() => {
         socket.emit("check after reload", { userId, receiverId });
       }, 2000);
     });
 
-<<<<<<<< HEAD:LetterBee-Frontend/src/services/GroupChatPage.service.jsx
     socket.on("receive groupMessage", (data) => {
-      const { senderId, identifier, fileName, fileType, fileData, sms } = data;
+      // ✅ FIX 1: const দিয়ে destructure করুন, let নয়
+      const { senderId, identifier, sms } = data;
+      let { fileName, fileType, fileData } = data; // reassign করতে হবে তাই let
 
-      // message decrypt
       const message =
         typeof sms === "string" && !sms.startsWith("http")
           ? decryptMessage(sms)
           : sms;
 
-      if (file?.fileData && file?.fileType) {
-        fileURL = `data:${file.fileType};base64,${file.fileData}`;
-        fileName = file.fileName || null;
-        fileType = file.fileType || null;
+      // ✅ FIX 2: data থেকে আসা file ব্যবহার করুন, undefined file নয়
+      let fileURL = null;
+      if (fileData && fileType) {
+        fileURL = `data:${fileType};base64,${fileData}`;
+        fileName = fileName || null;
+        fileType = fileType || null;
       }
+
       let id, avatar, name;
       if (senderId === userId) {
         setMessages((prev) => [
@@ -216,34 +218,41 @@ const GroupChatPage = () => {
       }
     });
 
-    socket.on("requestSender", (data) => {
-      console.log("DONG");
-
-      if (data) {
-        setRequestSender("receiver");
-========
+    // ✅ FIX 3: storedSms listener সঠিক জায়গায় আনা হয়েছে
     socket.on("storedSms", (data) => {
       const { identifier, file, text } = data;
+
       let message =
         typeof text === "string" && !text.startsWith("http")
           ? decryptMessage(text)
           : text;
+
       let fileURL = null;
       let fileName = null;
       let fileType = null;
 
       if (file && file.fileData && file.fileType) {
-        // For images, videos, pdf, etc.
         fileURL = `data:${file.fileType};base64,${file.fileData}`;
         fileName = file.fileName || null;
         fileType = file.fileType || null;
->>>>>>>> 443d633a0449f716b0c49857be001897e1d6840e:LetterBee-Frontend/src/services/chat.service.jsx
       }
+
+      // ✅ FIX 4: setMessages call যোগ করা হয়েছে (আগে ছিলই না!)
+      setMessages((prev) => [
+        ...prev,
+        {
+          identifier,
+          message,
+          fileName,
+          fileType,
+          fileURL,
+        },
+      ]);
     });
 
+    // ✅ FIX 5: duplicate requestSender listener সরানো হয়েছে
     socket.on("requestSender", (data) => {
       console.log("DONG");
-
       if (data) {
         setRequestSender("receiver");
       }
@@ -251,6 +260,9 @@ const GroupChatPage = () => {
 
     return () => {
       socket.off("state");
+      socket.off("checkDisconnect");        // ✅ FIX 6: cleanup এ যোগ করা হয়েছে
+      socket.off("receive groupMessage");   // ✅ FIX 6: cleanup এ যোগ করা হয়েছে
+      socket.off("storedSms");              // ✅ FIX 6: cleanup এ যোগ করা হয়েছে
       socket.off("requestSender");
       socket.off("receive message");
     };
@@ -1215,8 +1227,6 @@ const GroupChatPage = () => {
             </div>
           )}
           {/* Footer */}
-<<<<<<<< HEAD:LetterBee-Frontend/src/services/GroupChatPage.service.jsx
-========
           {/* No friend */}
           {requestState === "noFriend" && (
             <div className="flex flex-col items-center gap-[0.7rem]">
@@ -1295,7 +1305,6 @@ const GroupChatPage = () => {
             </div>
           )}
           {/* Friend */}
->>>>>>>> 443d633a0449f716b0c49857be001897e1d6840e:LetterBee-Frontend/src/services/chat.service.jsx
           {/* Type bar for sending sms*/}
           <div className="relative flex items-center h-[4rem]">
             {file && (

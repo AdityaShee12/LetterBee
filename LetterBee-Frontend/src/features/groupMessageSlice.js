@@ -11,31 +11,28 @@ const initialState = {
 const groupMessageSlice = createSlice({
   name: "groupMessage",
   initialState,
+
   reducers: {
-    setGroupId: (state, action) => {
-      state.groupId = action.payload.groupId;
+    setGroup: (state, action) => {
+      const {
+        groupId,
+        groupName,
+        groupAvatar,
+        groupAbout,
+        groupMembers,
+      } = action.payload;
+
+      state.groupId = groupId || "";
+      state.groupName = groupName || "";
+      state.groupAvatar = groupAvatar || "";
+      state.groupAbout = groupAbout || "";
+      state.groupMembers = groupMembers || [];
     },
-    setGroupName: (state, action) => {
-      state.groupName = action.payload.groupName;
-    },
-    setGroupAvatar: (state, action) => {
-      state.groupAvatar = action.payload.groupAvatar;
-    },
-    setGroupAbout: (state, action) => {
-      state.groupAbout = action.payload.groupAbout;
-    },
-    setGroupMembers: (state, action) => {
-      state.groupMembers = action.payload.groupMembers;
-    },
+
+    clearGroup: () => initialState,
   },
 });
 
-export const {
-  setGroupId,
-  setGroupAvatar,
-  setGroupName,
-  setGroupUsers,
-  setGroupAbout,
-  setGroupMembers,
-} = groupMessageSlice.actions;
+export const { setGroup, clearGroup } = groupMessageSlice.actions;
+
 export default groupMessageSlice.reducer;

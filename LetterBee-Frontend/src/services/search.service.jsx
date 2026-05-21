@@ -3,12 +3,12 @@ import { useNavigate, useNavigationType } from "react-router-dom";
 import CryptoJS from "crypto-js";
 import { debounce } from "lodash";
 import axios from "axios";
-import socket from "../socket.js";
+import socket from "../sockets/socket.js";
 import { AiOutlineSearch } from "react-icons/ai";
-import { setSelectUser } from "../features/userSlice.js";
-import { setChatAction } from "../features/layoutSlice.js";
+import { setUser } from "../features/userSlice.js"
+// import { setChatAction } from "../features/layoutSlice.js";
 import { useDispatch, useSelector } from "react-redux";
-import { BACKEND_API } from "../Backend_API.js";
+import { BACKEND_API } from "../api/Backend_API.js";
 
 const Search = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const Search = () => {
     setTimeout(async () => {
       try {
         const response = await axios.get(
-          `${BACKEND_API}/api/v1/users/userList?userId=${userId}`,   {
+          `${BACKEND_API}/api/v1/users/userList?userId=${userId}`, {
           withCredentials: true
         }
         );
@@ -72,9 +72,9 @@ const Search = () => {
     }
     try {
       const response = await axios.get(
-        `${BACKEND_API}/api/v1/users/searchUser?query=${searchText}&userId=${userId}`,   {
-          withCredentials: true
-        }
+        `${BACKEND_API}/api/v1/users/searchUser?query=${searchText}&userId=${userId}`, {
+        withCredentials: true
+      }
       );
       console.log("Res", response);
       const usersWithUUID = response.data.map((user) => ({
@@ -117,14 +117,14 @@ const Search = () => {
         let updatedUsers = prevUsers.map((user) =>
           user._id === userId
             ? {
-                ...user,
-                lastMessage: {
-                  ...user.lastMessage,
-                  text: fileType ? "" : t,
-                  fileType,
-                  fileName,
-                },
-              }
+              ...user,
+              lastMessage: {
+                ...user.lastMessage,
+                text: fileType ? "" : t,
+                fileType,
+                fileName,
+              },
+            }
             : user,
         );
         const index = updatedUsers.findIndex((u) => u._id === userId);
@@ -151,11 +151,11 @@ const Search = () => {
     setTimeout(() => {
       navigate(`/layout/chat/${recieverName}`);
     }, 300);
-    dispatch(
-      setChatAction({
-        chatAction: "chatPage",
-      }),
-    );
+    // dispatch(
+    //   setChatAction({
+    //     chatAction: "chatPage",
+    //   }),
+    // );
     console.log("Workredux");
 
     setQuery("");
@@ -258,9 +258,9 @@ const Search = () => {
                       </span>{" "}
                       {user.lastMessage.fileName
                         ? user.lastMessage.fileName
-                            .split(".")
-                            .pop()
-                            .toUpperCase() + " file"
+                          .split(".")
+                          .pop()
+                          .toUpperCase() + " file"
                         : "File"}
                     </>
                   )

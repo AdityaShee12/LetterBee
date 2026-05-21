@@ -1,34 +1,44 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  statusAction: null,
-  chatAction: null,
+  status: {
+    isOpen: false,
+    data: null,
+  },
+  
+  chat: {
+    isOpen: false,
+    activeChatId: null,
+  },
 };
 
 const layoutSlice = createSlice({
   name: "layout",
   initialState,
+
   reducers: {
-    setStatusAction: (state, action) => {
-      state.statusAction = action.payload.statusAction;
+    setStatusState: (state, action) => {
+      state.status = {
+        ...state.status,
+        ...action.payload,
+      };
     },
-    clearStatusAction: (state) => {
-      state.statusAction = null;
+
+    setChatState: (state, action) => {
+      state.chat = {
+        ...state.chat,
+        ...action.payload,
+      };
     },
-    setChatAction: (state, action) => {
-      state.chatAction = action.payload.chatAction;
-    },
-    clearChatAction: (state) => {
-      state.chatAction = null;
-    },
+
+    resetLayout: () => initialState,
   },
 });
 
 export const {
-  setStatusAction,
-  clearStatusAction,
-  setChatAction,
-  clearChatAction,
+  setStatusState,
+  setChatState,
+  resetLayout,
 } = layoutSlice.actions;
 
 export default layoutSlice.reducer;

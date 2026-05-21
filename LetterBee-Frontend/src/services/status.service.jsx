@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import { BACKEND_API } from "../Backend_API.js";
+import { BACKEND_API } from "../api/Backend_API.js";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
@@ -285,124 +285,83 @@ const StatusUpload = () => {
         <div>
           {userStatusCount ? (
             <div className="flex">
-              {/* if zoom or multiple status available or show only last status*/}
               {selectUserStatus ? (
                 <div>
-                  {/* If zoom or multiple status available then below code will execute */}
+                  {/* Zoom modal */}
                   {zoom && selectedFile ? (
-                    <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[9999]">
                       <div className="relative max-w-full max-h-full">
-                        {selectedFile?.endsWith(".mp4") ||
-                        selectedFile?.includes("video") ? (
-                          <TransformWrapper
-                            initialScale={1}
-                            wheel={{ step: 0.1 }}
-                            pinch={{ step: 5 }}
-                            doubleClick={{ disabled: true }}>
-                            {" "}
+                        {selectedFile?.endsWith(".mp4") || selectedFile?.includes("video") ? (
+                          <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }} doubleClick={{ disabled: true }}>
                             <TransformComponent>
-                              <video
-                                src={selectedFile}
-                                className="max-w-full max-h-screen object-contain"
-                                autoPlay
-                                muted
-                              />
-                            </TransformComponent>{" "}
+                              <video src={selectedFile} className="max-w-full max-h-screen object-contain" autoPlay muted />
+                            </TransformComponent>
                           </TransformWrapper>
                         ) : (
                           <div className="cursor-grab">
-                            {" "}
-                            <TransformWrapper
-                              initialScale={1}
-                              wheel={{ step: 0.1 }}
-                              pinch={{ step: 5 }}>
-                              {" "}
+                            <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }}>
                               <TransformComponent>
-                                <img
-                                  src={selectedFile}
-                                  alt="status"
-                                  className="max-w-full max-h-screen object-contain"
-                                />
+                                <img src={selectedFile} alt="status" className="max-w-full max-h-screen object-contain" />
                               </TransformComponent>
                             </TransformWrapper>
                           </div>
                         )}
                         <button
-                          className="absolute top-2 right-2 text-white/80 hover:text-white font-bold text-xl transition-colors"
-                          onClick={() => {
-                            setZoom(false);
-                            setSelectedFile(null);
-                          }}>
+                          className="absolute top-2 right-2 w-9 h-9 flex items-center justify-center
+                                     rounded-xl bg-white/10 border border-white/10 text-white/60
+                                     hover:text-white hover:bg-white/20 transition-colors font-bold text-xl"
+                          onClick={() => { setZoom(false); setSelectedFile(null); }}>
                           ✕
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-5">
-                      {" "}
                       <div className="flex gap-4">
+                        {/* Upload button */}
                         <label
                           htmlFor="status"
-                          className="w-[3.5rem] h-[3.5rem] rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shadow-lg text-white/50 hover:text-white overflow-hidden cursor-pointer flex items-center justify-center">
+                          className="w-[3.5rem] h-[3.5rem] rounded-full bg-white/5 border border-white/10
+                                     hover:bg-white/10 transition-colors shadow-lg text-white/50
+                                     hover:text-white overflow-hidden cursor-pointer flex items-center justify-center">
                           {previewUrl ? (
                             file.type.startsWith("video/") ? (
-                              <video
-                                src={previewUrl}
-                                className="w-full h-full object-cover"
-                              />
+                              <video src={previewUrl} className="w-full h-full object-cover" />
                             ) : (
-                              <img
-                                src={previewUrl}
-                                alt="preview"
-                                className="w-full h-full object-cover"
-                              />
+                              <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
                             )
                           ) : (
                             "+"
                           )}
-                          <input
-                            type="file"
-                            id="status"
-                            accept="image/,video/"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                          />
+                          <input type="file" id="status" accept="image/,video/" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                         </label>
-                        {file &&
-                          (uploading ? (
+
+                        {file && (
+                          uploading ? (
                             <div className="w-12 h-12 border-4 border-[#4337e6] border-dashed rounded-full animate-spin"></div>
                           ) : (
                             <div
-                              className="w-20 h-7 rounded-lg mt-[0.7rem] ml-[0.3rem] text-green-600 text-xl cursor-pointer flex items-center justify-center"
+                              className="w-20 h-9 rounded-xl mt-[0.6rem] ml-[0.3rem] bg-slate-800 border border-slate-700
+                                         hover:border-orange-500/40 text-orange-400 text-sm font-semibold cursor-pointer
+                                         flex items-center justify-center transition-colors"
                               onClick={handleUpload}>
                               Upload
                             </div>
-                          ))}
+                          )
+                        )}
                       </div>
+
+                      {/* User's uploaded statuses list */}
                       {userStatus?.length > 0 && (
                         <div className="flex flex-col gap-3">
                           {userStatus?.map((file, index) => (
                             <div
                               key={index}
-                              onClick={() => {
-                                setZoom(true);
-                                setSelectedFile(file);
-                                setFriendStatus(false);
-                              }}>
-                              {file.endsWith(".mp4") ||
-                              file.includes("video") ? (
-                                <video
-                                  src={file}
-                                  controls
-                                  className="w-[3.5rem] h-[3.5rem] rounded-full cursor-pointer"
-                                />
+                              onClick={() => { setZoom(true); setSelectedFile(file); setFriendStatus(false); }}>
+                              {file.endsWith(".mp4") || file.includes("video") ? (
+                                <video src={file} controls className="w-[3.5rem] h-[3.5rem] rounded-full cursor-pointer ring-2 ring-orange-500/40" />
                               ) : (
-                                <img
-                                  src={file}
-                                  alt=""
-                                  className="w-[3.5rem] h-[3.5rem] rounded-full cursor-pointer"
-                                />
+                                <img src={file} alt="" className="w-[3.5rem] h-[3.5rem] rounded-full cursor-pointer ring-2 ring-orange-500/40" />
                               )}
                             </div>
                           ))}
@@ -412,63 +371,45 @@ const StatusUpload = () => {
                   )}
                 </div>
               ) : (
-                // last status which uploaded by user
+                // Last status thumbnail
                 <div
-                  className="w-14 h-14 rounded-full border-2 border-green-500 overflow-hidden cursor-pointer"
+                  className="w-14 h-14 rounded-full border-2 border-orange-500/60 overflow-hidden cursor-pointer"
                   onClick={() => setSelectUserStatus(true)}>
-                  {userLastFile &&
-                    (userLastFile?.endsWith(".mp4") ||
-                    userLastFile?.includes("video") ? (
-                      <video
-                        src={userLastFile}
-                        className="w-full h-full object-cover"
-                        muted
-                        loop
-                      />
+                  {userLastFile && (
+                    userLastFile?.endsWith(".mp4") || userLastFile?.includes("video") ? (
+                      <video src={userLastFile} className="w-full h-full object-cover" muted loop />
                     ) : (
-                      <img
-                        src={userLastFile}
-                        alt="status"
-                        className="w-full h-full object-cover"
-                      />
-                    ))}
+                      <img src={userLastFile} alt="status" className="w-full h-full object-cover" />
+                    )
+                  )}
                 </div>
               )}
             </div>
           ) : (
-            // If no status uploaded by user
+            // No status yet — upload prompt
             <div className="flex gap-4">
               <label
                 htmlFor="status"
-                className="w-[3.5rem] h-[3.5rem] rounded-full bg-white/10 hover:bg-white/20 transition-colors border border-white/10 shadow-lg text-white/50 hover:text-white overflow-hidden cursor-pointer flex items-center justify-center">
+                className="w-[3.5rem] h-[3.5rem] rounded-full bg-white/5 border border-white/10
+                           hover:bg-white/10 transition-colors shadow-lg text-white/50
+                           hover:text-white overflow-hidden cursor-pointer flex items-center justify-center">
                 {previewUrl ? (
                   file.type.startsWith("video/") ? (
-                    <video
-                      src={previewUrl}
-                      className="w-full h-full object-cover"
-                    />
+                    <video src={previewUrl} className="w-full h-full object-cover" />
                   ) : (
-                    <img
-                      src={previewUrl}
-                      alt="preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={previewUrl} alt="preview" className="w-full h-full object-cover" />
                   )
                 ) : (
                   "+"
                 )}
-                <input
-                  type="file"
-                  id="status"
-                  accept="image/,video/"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
+                <input type="file" id="status" accept="image/,video/" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
               </label>
+
               {file && (
                 <div
-                  className="w-20 h-7 rounded-lg mt-[0.7rem] ml-[0.3rem] text-green-600 text-xl cursor-pointer flex items-center justify-center"
+                  className="w-20 h-9 rounded-xl mt-[0.6rem] ml-[0.3rem] bg-slate-800 border border-slate-700
+                             hover:border-orange-500/40 text-orange-400 text-sm font-semibold cursor-pointer
+                             flex items-center justify-center transition-colors"
                   onClick={handleUpload}>
                   Upload
                 </div>
@@ -476,63 +417,42 @@ const StatusUpload = () => {
             </div>
           )}
         </div>
-        <div className="my-3 text-xl font-mono text-white/90">My Status</div>
+
+        {/* "My Status" label */}
+        <div className="my-3 text-[0.95rem] font-semibold text-slate-100">My Status</div>
       </div>
-      {/* Recent updates */}
-      {/* Friend round icons */}
+
+      {/* ─── Friend's Status ─── */}
       {friendStatus && (
         <div>
-          {/* Friend status modal */}
-          <div className="my-4 text-2xl font-mono text-white/90">Friend's status</div>
+          <div className="my-4 text-[0.95rem] font-semibold text-slate-100">Friend's status</div>
+
+          {/* Friend status zoom modal */}
           {zoom1 && selectedFiles?.length > 0 && selectedFiles[currentIndex] ? (
-            <div className="fixed inset-0 bg-black flex items-center justify-center z-[9999]">
+            <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[9999]">
               <div className="relative max-w-full max-h-full">
-                {selectedFiles[currentIndex]?.endsWith(".mp4") ||
-                selectedFiles[currentIndex]?.includes("video") ? (
+                {selectedFiles[currentIndex]?.endsWith(".mp4") || selectedFiles[currentIndex]?.includes("video") ? (
                   <div className="cursor-grab">
-                    {" "}
-                    <TransformWrapper
-                      initialScale={1}
-                      wheel={{ step: 0.1 }}
-                      pinch={{ step: 5 }}>
-                      {" "}
+                    <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }}>
                       <TransformComponent>
-                        {" "}
-                        <video
-                          src={selectedFiles[currentIndex]}
-                          className="max-w-full max-h-screen object-contain"
-                          controls
-                          autoPlay
-                          muted
-                        />{" "}
+                        <video src={selectedFiles[currentIndex]} className="max-w-full max-h-screen object-contain" controls autoPlay muted />
                       </TransformComponent>
                     </TransformWrapper>
                   </div>
                 ) : (
                   <div className="cursor-grab">
-                    {" "}
-                    <TransformWrapper
-                      initialScale={1}
-                      wheel={{ step: 0.1 }}
-                      pinch={{ step: 5 }}>
-                      {" "}
+                    <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }}>
                       <TransformComponent>
-                        {" "}
-                        <img
-                          src={selectedFiles[currentIndex]}
-                          alt="status"
-                          className="max-w-full max-h-screen object-contain"
-                        />{" "}
+                        <img src={selectedFiles[currentIndex]} alt="status" className="max-w-full max-h-screen object-contain" />
                       </TransformComponent>
                     </TransformWrapper>
                   </div>
                 )}
                 <button
-                  className="absolute top-2 right-2 text-white text-xl"
-                  onClick={() => {
-                    setZoom1(false);
-                    setSelectedFiles(null);
-                  }}>
+                  className="absolute top-2 right-2 w-9 h-9 flex items-center justify-center
+                             rounded-xl bg-white/10 border border-white/10 text-white/60
+                             hover:text-white hover:bg-white/20 transition-colors text-xl"
+                  onClick={() => { setZoom1(false); setSelectedFiles(null); }}>
                   ✕
                 </button>
               </div>
@@ -542,39 +462,24 @@ const StatusUpload = () => {
               {statuses?.length > 0 && (
                 <div className="flex flex-col gap-3">
                   {statuses.map((status, index) => {
-                    const lastFile =
-                      status?.statuses?.[status?.statuses?.length - 1];
+                    const lastFile = status?.statuses?.[status?.statuses?.length - 1];
                     return lastFile ? (
                       <div key={index} className="flex items-center gap-3">
                         <div
-                          className="w-14 h-14 rounded-full border-2 border-green-500 overflow-hidden cursor-pointer"
-                          onClick={() => {
-                            setZoom1(true);
-                            setSelectedFiles(status?.statuses);
-                            setCurrentIndex(0);
-                          }}>
-                          {lastFile?.endsWith(".mp4") ||
-                          lastFile?.includes("video") ? (
-                            <video
-                              src={lastFile}
-                              className="w-full h-full object-cover"
-                              muted
-                              loop
-                            />
+                          className="w-14 h-14 rounded-full border-2 border-orange-500/60 overflow-hidden cursor-pointer"
+                          onClick={() => { setZoom1(true); setSelectedFiles(status?.statuses); setCurrentIndex(0); }}>
+                          {lastFile?.endsWith(".mp4") || lastFile?.includes("video") ? (
+                            <video src={lastFile} className="w-full h-full object-cover" muted loop />
                           ) : (
-                            <img
-                              src={lastFile}
-                              alt="status"
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={lastFile} alt="status" className="w-full h-full object-cover" />
                           )}
                         </div>
-                        <div className="my-2 text-xl font-mono text-white/90">
+                        <div className="text-[0.95rem] font-semibold text-slate-100">
                           {status?.friendName}
                         </div>
                       </div>
                     ) : (
-                      <div className="text-lg text-white/50 italic">
+                      <div className="text-sm text-slate-500 italic">
                         No friend's status available
                       </div>
                     );
