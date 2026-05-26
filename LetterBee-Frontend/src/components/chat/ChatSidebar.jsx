@@ -40,6 +40,7 @@ const ChatSidebar = () => {
 
     useEffect(() => {
         const { _id, email, fullName, userName, avatar, about } = user;
+        console.log("Console", _id, email, fullName, userName, avatar, about);
         setUserId(_id);
         setAvatar(avatar);
         setFullName(fullName);
@@ -122,9 +123,7 @@ const ChatSidebar = () => {
                 }
             }, 100);
         };
-
-        fetchRecentChats(); console.log("uID", userId);
-
+        fetchRecentChats();
         socket.on("last message", handleLastMessage);
     }, [userId]);
 
@@ -137,11 +136,9 @@ const ChatSidebar = () => {
         }
         try {
             const response = await userAPI.searchUser({ searchText, userId });
-            console.log("Res", response);
             const usersWithUUID = response.data.map((user) => ({
                 ...user,
             }));
-            console.log("Data", usersWithUUID);
             setUsers(usersWithUUID);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -155,14 +152,14 @@ const ChatSidebar = () => {
 
     // This code for show online after online
     useEffect(() => {
-        console.log("work");
+        console.log("work", userId, userName);
         if (socket.connected) {
-            socket.emit("new-user-joined", userId, userName);
+            socket.emit("new-user-joined", { senderId: userId, userName });
         } else {
             socket.connect();
-            socket.emit("new-user-joined", userId, userName);
+            socket.emit("new-user-joined", { senderId: userId, userName });
         }
-    }, []);
+    }, [userId, userName]);
 
     // After selecting user from userlist
     const handleSelectUser = (user) => {

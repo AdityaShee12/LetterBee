@@ -4,14 +4,14 @@ import { setUser, clearUser } from "../features/userSlice.js";
 // Register a new user
 export const registerUser = async (formData, dispatch) => {
   const { data } = await authAPI.register(formData);
-  dispatch(setUser(data?.createdUser));
+  console.log("Data", data);
+  dispatch(setUser(data));
   return data;
 };
 
 // Login a user
 export const loginUser = async (credentials, dispatch) => {
   const { data } = await authAPI.login(credentials);
-  console.log("Data", data?.loggedInUser);
   dispatch(setUser(data?.loggedInUser));
   return data;
 };

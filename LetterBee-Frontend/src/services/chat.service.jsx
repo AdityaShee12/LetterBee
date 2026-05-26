@@ -18,8 +18,12 @@ const configuration = {
 };
 
 const ChatService = () => {
+  const [receiverId, setReceiverId] = useState("");
   const [receiverAvatar, setReceiverAvatar] = useState("");
-  const [receiverName, setReceiverName] = useState("");
+  const [receiverFullName, setReceiverFullName] = useState("");
+  const [receiverUserName, setReceiverUserName] = useState("");
+  const [receiverAbout, setReceiverAbout] = useState("");
+  const [receiverEmail, setReceiverEmail] = useState("");
   const [state, setState] = useState("offline");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -75,19 +79,21 @@ const ChatService = () => {
   const [fullName, setFullName] = useState("");
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState();
-  const [avatar, setAvatar] = useState("");
+  const [senderAvatar, setSenderAvatar] = useState("");
   const [about, setAbout] = useState("");
+
   const { user } = useSelector(
     (state) => state.user,
   );
+
   const { selectUser } = useSelector(
     (state) => state.user,
   );
 
-  useEffect(() => {
+useEffect(() => {
     const { _id, email, fullName, userName, avatar, about } = user;
     setSenderId(_id);
-    setAvatar(avatar);
+    setSenderAvatar(avatar);
     setFullName(fullName);
     setEmail(email);
     setUserName(userName);
@@ -96,8 +102,176 @@ const ChatService = () => {
 
   useEffect(() => {
     const { _id, email, fullName, userName, avatar, about } = selectUser;
-
+    setReceiverId(_id);
+    setReceiverFullName(fullName);
+    setReceiverUserName(userName);
+    setReceiverEmail(email);
+    setReceiverAbout(about);
+    setReceiverAvatar(avatar);
   }, [selectUser]);
+
+  // useEffect for select user, onloine-offline, disconnection, previous sms,
+  useEffect(() => {
+    // Select other user from search list
+    const recieverFunction = async () => {
+      try {
+        socket.emit("reciever add", {
+          senderId,
+          receiverId,
+          receiverFullName,
+        });
+      } catch (error) {
+        console.log("RA Err", error);
+      }
+    };
+    recieverFunction();
+    // Handling state online or offline of other user
+    socket.on("state", (state) => setState(state)
+    );
+
+    // Handling disconnection of client
+    socket.on("checkDisconnect", (state) => {
+      console.log("Cdisco");
+
+      setState(state);
+      setTimeout(() => {
+        socket.emit("check after reload", { senderId, receiverId });
+      }, 2000);
+    });
+
+    // Handling receive message
+    socket.on("receive message", (data) => {
+      const { identifier, fileName, fileType, buf, sms } = data;
+      let message =
+        typeof sms === "string" && !sms.startsWith("http")
+          ? decryptMessage(sms)
+          : sms;
+      let uint8Array;
+      let blob;
+      let fileURL;
+
+      if (buf) {
+        // Convert ArrayBuffer to Uint8Array before creating blob
+        uint8Array = new Uint8Array(buf);
+        blob = new Blob([uint8Array], { type: fileType });
+        fileURL = URL.createObjectURL(blob);
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "Sender",
+          identifier,
+          message,
+          fileName,
+          fileType,
+          fileURL,
+        },
+      ]);
+    });
+
+    // Show previous message
+    socket.on("receive groupMessage", (data) => {
+      const { senderId, identifier, fileName, fileType, fileData, sms } = data;
+
+      // message decrypt
+      const message =
+        typeof sms === "string" && !sms.startsWith("http")
+          ? decryptMessage(sms)
+          : sms;
+
+      if (file?.fileData && file?.fileType) {
+        fileURL = `data:${file.fileType};base64,${file.fileData}`;
+        fileName = file.fileName || null;
+        fileType = file.fileType || null;
+      }
+      let id, avatar, name;
+      if (senderId === senderId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "You",
+            identifier,
+            message,
+            fileName,
+            fileType,
+            fileURL,
+          },
+        ]);
+      } else {
+        for (const member of groupMembers) {
+          if (senderId === member.id) {
+            id = member.id;
+            avatar = member.avatar;
+            name = member.name;
+          }
+        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id,
+            avatar,
+            name,
+            identifier,
+            message,
+            fileName,
+            fileType,
+            fileURL,
+          },
+        ]);
+      }
+    });
+
+    socket.on("requestSender", (data) => {
+      console.log("Data");
+      if (data) {
+        console.log("Data12");
+        setRequestSender("receiver");
+        socket.on("storedSms", (data) => {
+          const { identifier, file, text } = data;
+          let message =
+            typeof text === "string" && !text.startsWith("http")
+              ? decryptMessage(text)
+              : text;
+          let fileURL = null;
+          let fileName = null;
+          let fileType = null;
+          if (file && file.fileData && file.fileType) {
+            // For images, videos, pdf, etc.
+            fileURL = `data:${file.fileType};base64,${file.fileData}`;
+            fileName = file.fileName || null;
+            fileType = file.fileType || null;
+          }
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: "Sender",
+              identifier,
+              message,
+              fileName,
+              fileType,
+              fileURL,
+            },
+          ]);
+        })
+      }
+    }
+    );
+
+    // socket.on("requestSender", (data) => {
+    //   console.log("DONG");
+
+    //   if (data) {
+    //     setRequestSender("receiver");
+    //   }
+    // });
+
+    return () => {
+      socket.off("state");
+      socket.off("checkDisconnect");
+      socket.off("receive message");
+      socket.off("storedSms");
+    };
+  }, [senderId, receiverId, receiverFullName]);
 
   // StartDrag
   const startDrag = (e) => {
@@ -151,16 +325,16 @@ const ChatService = () => {
     }
   }, [messages]);
 
-  useEffect(() => {
-    socket.on("requestSender", (data) => {
-      if (data.data === "receiver") {
-        setRequestSender("receiver");
-      }
-    });
-    return () => {
-      socket.off("requestSender");
-    };
-  }, []);
+  // useEffect(() => {
+  //   socket.on("requestSender", (data) => {
+  //     if (data.data === "receiver") {
+  //       setRequestSender("receiver");
+  //     }
+  //   });
+  //   return () => {
+  //     socket.off("requestSender");
+  //   };
+  // }, []);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -206,169 +380,6 @@ const ChatService = () => {
       }).toString();
     }
   }
-
-  // useEffect for select user, onloine-offline, disconnection, previous sms,
-  useEffect(() => {
-
-    // Select other user from search list
-    const recieverFunction = async () => {
-      try {
-        socket.emit("reciever add", {
-          userId,
-          receiverId,
-          receiverName,
-        });
-      } catch (error) {
-        console.log("RA Err", error);
-      }
-    };
-    recieverFunction();
-
-    // Handling state online or offline of other user
-    socket.on("state", (state) => setState(state));
-
-    // Handling disconnection of client
-    socket.on("checkDisconnect", (state) => {
-      console.log("Cdisco");
-
-      setState(state);
-      setTimeout(() => {
-        socket.emit("check after reload", { userId, receiverId });
-      }, 2000);
-    });
-
-
-    // Handling receive message
-    socket.on("receive message", (data) => {
-      const { identifier, fileName, fileType, buf, sms } = data;
-      let message =
-        typeof sms === "string" && !sms.startsWith("http")
-          ? decryptMessage(sms)
-          : sms;
-      let uint8Array;
-      let blob;
-      let fileURL;
-
-      if (buf) {
-        // Convert ArrayBuffer to Uint8Array before creating blob
-        uint8Array = new Uint8Array(buf);
-        blob = new Blob([uint8Array], { type: fileType });
-        fileURL = URL.createObjectURL(blob);
-      }
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "Sender",
-          identifier,
-          message,
-          fileName,
-          fileType,
-          fileURL,
-        },
-      ]);
-    });
-
-    // Show previous message
-    socket.on("receive groupMessage", (data) => {
-      const { senderId, identifier, fileName, fileType, fileData, sms } = data;
-
-      // message decrypt
-      const message =
-        typeof sms === "string" && !sms.startsWith("http")
-          ? decryptMessage(sms)
-          : sms;
-
-      if (file?.fileData && file?.fileType) {
-        fileURL = `data:${file.fileType};base64,${file.fileData}`;
-        fileName = file.fileName || null;
-        fileType = file.fileType || null;
-      }
-      let id, avatar, name;
-      if (senderId === userId) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "You",
-            identifier,
-            message,
-            fileName,
-            fileType,
-            fileURL,
-          },
-        ]);
-      } else {
-        for (const member of groupMembers) {
-          if (senderId === member.id) {
-            id = member.id;
-            avatar = member.avatar;
-            name = member.name;
-          }
-        }
-        setMessages((prev) => [
-          ...prev,
-          {
-            id,
-            avatar,
-            name,
-            identifier,
-            message,
-            fileName,
-            fileType,
-            fileURL,
-          },
-        ]);
-      }
-    });
-
-    socket.on("requestSender", (data) => {
-      if (data) {
-        setRequestSender("receiver");
-        socket.on("storedSms", (data) => {
-          const { identifier, file, text } = data;
-          let message =
-            typeof text === "string" && !text.startsWith("http")
-              ? decryptMessage(text)
-              : text;
-          let fileURL = null;
-          let fileName = null;
-          let fileType = null;
-          if (file && file.fileData && file.fileType) {
-            // For images, videos, pdf, etc.
-            fileURL = `data:${file.fileType};base64,${file.fileData}`;
-            fileName = file.fileName || null;
-            fileType = file.fileType || null;
-          }
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "Sender",
-              identifier,
-              message,
-              fileName,
-              fileType,
-              fileURL,
-            },
-          ]);
-        })
-      }
-    }
-    );
-
-    socket.on("requestSender", (data) => {
-      console.log("DONG");
-
-      if (data) {
-        setRequestSender("receiver");
-      }
-    });
-
-    return () => {
-      socket.off("state");
-      socket.off("checkDisconnect");
-      socket.off("receive message");
-      socket.off("storedSms");
-    };
-  }, []);
 
   // Managing Contextmenu 
   const openContextMenu = (msg, event) => {
@@ -756,23 +767,6 @@ const ChatService = () => {
     setActiveSection("groups");
   };
 
-  // Show own profile
-  useEffect(() => {
-    const profile = async () => {
-      console.log("receiverProfile", receiverId, receiverName, receiverAvatar);
-      try {
-        const response = await axios.get(
-          `/api/v1/users/profile?userId=${receiverId}`,
-        );
-        console.log("Res", response);
-        setAbout(response.data.data.about);
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
-    };
-    profile();
-  }, [activeSection]);
-
   // Sending Message
   const sendMessage = async () => {
     if (!message.trim() && !file) return;
@@ -791,11 +785,11 @@ const ChatService = () => {
     }
     const identifier = uuidv4();
     const sendItem = {
-      userId,
+      senderId,
       userName,
-      userAvatar,
+      senderAvatar,
       receiverId,
-      receiverName,
+      receiverFullName,
       receiverAvatar,
       identifier,
       sms,
@@ -863,11 +857,11 @@ const ChatService = () => {
   const sendRequest = () => {
     const identifier = uuidv4();
     socket.emit("sendRequest", {
-      userId,
+      senderId,
       userName,
-      userAvatar,
+      senderAvatar,
       receiverId,
-      receiverName,
+      receiverFullName,
       receiverAvatar,
     });
     setRequestState("sent");
@@ -876,13 +870,12 @@ const ChatService = () => {
   // Code for accept or reject requests
   const replyRequest = (accept) => {
     const identifier = uuidv4();
-
     socket.emit("acceptRequest", {
-      userId,
+      senderId,
       userName,
-      userAvatar,
+      senderAvatar,
       receiverId,
-      receiverName,
+      receiverFullName,
       receiverAvatar,
       identifier,
       accept: accept ? 1 : 0, // backend clarity
@@ -894,7 +887,7 @@ const ChatService = () => {
         {
           sender: "You",
           identifier,
-          message: `You accepted ${receiverName}'s request`,
+          message: `You accepted ${receiverFullName}'s request`,
         },
       ]);
       setRequestState("friend");
@@ -903,9 +896,9 @@ const ChatService = () => {
       setMessages((prev) => [
         ...prev,
         {
-          sender: "You", // ❌ "sender" নয়
+          sender: "You",
           identifier,
-          message: `You rejected friend request of ${receiverName}`,
+          message: `You rejected friend request of ${receiverFullName}`,
         },
       ]);
       setRequestState("reject");
@@ -951,7 +944,7 @@ const ChatService = () => {
 
           <div className="flex flex-col justify-center">
             <h2 className="text-[0.95rem] font-semibold leading-tight text-slate-100">
-              {receiverName}
+              {receiverFullName}
             </h2>
             <p className={`text-xs flex items-center gap-1 font-medium
           ${state === "Online" ? "text-emerald-400" : "text-slate-500"}`}>
@@ -1039,7 +1032,7 @@ const ChatService = () => {
 
                     {/* Name + status badge */}
                     <div className="flex items-center gap-2 mt-4">
-                      <h2 className="text-xl font-bold text-slate-100">{receiverName}</h2>
+                      <h2 className="text-xl font-bold text-slate-100">{receiverFullName}</h2>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium
                     ${state === "Online"
                           ? "bg-emerald-500/20 text-emerald-400"
@@ -1152,8 +1145,8 @@ const ChatService = () => {
                 <div className="bg-slate-800/80 border border-slate-700 text-slate-400
                             text-xs px-4 py-1.5 rounded-full backdrop-blur-sm">
                   {requestSender === "receiver"
-                    ? `${receiverName} accepted your friend request.`
-                    : `You accepted ${receiverName}'s friend request.`}
+                    ? `${receiverFullName} accepted your friend request.`
+                    : `You accepted ${receiverFullName}'s friend request.`}
                 </div>
               </div>
             )}
@@ -1300,13 +1293,12 @@ const ChatService = () => {
           )}
 
           {/* ─── Footer States ─── */}
-
           {/* No friend */}
           {requestState === "noFriend" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="bg-slate-800 border border-slate-700 text-slate-400
                           text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-                If you want to chat with <span className="text-slate-200 font-medium">{receiverName}</span>,
+                If you want to chat with <span className="text-slate-200 font-medium">{receiverFullName}</span>,
                 you need to send a friend request first.
               </div>
               <button
@@ -1326,14 +1318,14 @@ const ChatService = () => {
                 <div className="flex justify-center">
                   <div className="bg-slate-800 border border-slate-700 text-slate-400
                               text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-                    You sent a friend request to <span className="text-slate-200 font-medium">{receiverName}</span>.
+                    You sent a friend request to <span className="text-slate-200 font-medium">{receiverFullName}</span>.
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3">
                   <div className="bg-slate-800 border border-slate-700 text-slate-400
                               text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-                    <span className="text-slate-200 font-medium">{receiverName}</span> sent you a friend request.
+                    <span className="text-slate-200 font-medium">{receiverFullName}</span> sent you a friend request.
                   </div>
                   <div className="flex gap-4">
                     <button
@@ -1448,12 +1440,857 @@ const ChatService = () => {
               </button>
             </div>
           )}
-
         </div>
       </div>
-
     </div>
   );
 }
 
 export default ChatService;
+
+  // useEffect(() => {
+  //   const { _id, email, fullName, userName, avatar, about } = user;
+  //   setSenderId(_id);
+  //   setAvatar(avatar);
+  //   setFullName(fullName);
+  //   setEmail(email);
+  //   setUserName(userName);
+  //   setAbout(about);
+  // }, [user]);
+
+  // useEffect(() => {
+  //   const { _id, email, fullName, userName, avatar, about } = selectUser;
+  //   setReceiverId(_id);
+  //   setReceiverFullName(fullName);
+  //   setReceiverUserName(userName);
+  //   setReceiverEmail(email);
+  //   setReceiverAbout(about);
+  //   setFullName(fullName);
+  //   setReceiverAvatar(avatar);
+  // }, [selectUser]);
+
+  // // StartDrag
+  // const startDrag = (e) => {
+  //   e.preventDefault();
+  //   const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+  //   const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+  //   offset = {
+  //     x: clientX - localVideoPos.x,
+  //     y: clientY - localVideoPos.y,
+  //   };
+
+  //   document.addEventListener("mousemove", onDrag);
+  //   document.addEventListener("mouseup", stopDrag);
+  //   document.addEventListener("touchmove", onDrag);
+  //   document.addEventListener("touchend", stopDrag);
+  // };
+
+  // const onDrag = (e) => {
+  //   const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+  //   const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+  //   setLocalVideoPos({
+  //     x: clientX - offset.x,
+  //     y: clientY - offset.y,
+  //   });
+  // };
+
+  // const stopDrag = () => {
+  //   document.removeEventListener("mousemove", onDrag);
+  //   document.removeEventListener("mouseup", stopDrag);
+  //   document.removeEventListener("touchmove", onDrag);
+  //   document.removeEventListener("touchend", stopDrag);
+  // };
+
+  // const handleMouseDown = (e) => {
+  //   setIsDragging(true);
+  //   dragStart.current = {
+  //     x: e.clientX - translate.x,
+  //     y: e.clientY - translate.y,
+  //   };
+  // };
+
+  // const handleMouseUp = () => {
+  //   clearTimeout(pressTimer);
+  // };
+
+  // useEffect(() => {
+  //   if (chatContainerRef.current) {
+  //     chatContainerRef.current.scrollTop =
+  //       chatContainerRef.current.scrollHeight;
+  //   }
+  // }, [messages]);
+
+  // useEffect(() => {
+  //   socket.on("requestSender", (data) => {
+  //     if (data.data === "receiver") {
+  //       setRequestSender("receiver");
+  //     }
+  //   });
+  //   return () => {
+  //     socket.off("requestSender");
+  //   };
+  // }, []);
+
+  // const handleFileChange = (e) => {
+  //   const selectedFile = e.target.files[0];
+  //   if (selectedFile) {
+  //     setFile(selectedFile);
+  //     // Create preview URL
+  //     const previewURL = URL.createObjectURL(selectedFile);
+  //     setFilePreview(previewURL);
+  //   }
+  // };
+
+  // const handleChange = (e) => {
+  //   setMessage(e.target.value);
+  //   // socket.emit("typing-state", ToId);
+  //   const textarea = messageInputRef.current;
+  //   textarea.style.height = "auto"; // Height reset
+  //   textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px"; // Max height 200px
+  // };
+
+  // // Decruption of sms
+  // function decryptMessage(encryptedText) {
+  //   if (encryptMessage) {
+  //     const bytes = CryptoJS.AES.decrypt(
+  //       encryptedText,
+  //       CryptoJS.enc.Hex.parse(secretKey),
+  //       {
+  //         iv: CryptoJS.enc.Hex.parse(iv),
+  //         mode: CryptoJS.mode.CBC,
+  //         padding: CryptoJS.pad.Pkcs7,
+  //       },
+  //     );
+  //     return bytes.toString(CryptoJS.enc.Utf8);
+  //   }
+  // }
+
+  // // Encryption of sms
+  // function encryptMessage(message) {
+  //   if (message) {
+  //     return CryptoJS.AES.encrypt(message, CryptoJS.enc.Hex.parse(secretKey), {
+  //       iv: CryptoJS.enc.Hex.parse(iv),
+  //       mode: CryptoJS.mode.CBC,
+  //       padding: CryptoJS.pad.Pkcs7,
+  //     }).toString();
+  //   }
+  // }
+
+  // // useEffect for select user, onloine-offline, disconnection, previous sms,
+  // useEffect(() => {
+
+  //   // Select other user from search list
+  //   const recieverFunction = async () => {
+  //     try {
+  //       socket.emit("reciever add", {
+  //         senderId,
+  //         receiverId,
+  //         receiverFullName,
+  //       });
+  //     } catch (error) {
+  //       console.log("RA Err", error);
+  //     }
+  //   };
+  //   recieverFunction();
+
+  //   // Handling state online or offline of other user
+  //   socket.on("state", (state) => setState(state));
+
+  //   // Handling disconnection of client
+  //   socket.on("checkDisconnect", (state) => {
+  //     console.log("Cdisco");
+
+  //     setState(state);
+  //     setTimeout(() => {
+  //       socket.emit("check after reload", { userId, receiverId });
+  //     }, 2000);
+  //   });
+
+
+  //   // Handling receive message
+  //   socket.on("receive message", (data) => {
+  //     const { identifier, fileName, fileType, buf, sms } = data;
+  //     let message =
+  //       typeof sms === "string" && !sms.startsWith("http")
+  //         ? decryptMessage(sms)
+  //         : sms;
+  //     let uint8Array;
+  //     let blob;
+  //     let fileURL;
+
+  //     if (buf) {
+  //       // Convert ArrayBuffer to Uint8Array before creating blob
+  //       uint8Array = new Uint8Array(buf);
+  //       blob = new Blob([uint8Array], { type: fileType });
+  //       fileURL = URL.createObjectURL(blob);
+  //     }
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       {
+  //         sender: "Sender",
+  //         identifier,
+  //         message,
+  //         fileName,
+  //         fileType,
+  //         fileURL,
+  //       },
+  //     ]);
+  //   });
+
+  //   // Show previous message
+  //   socket.on("receive groupMessage", (data) => {
+  //     const { senderId, identifier, fileName, fileType, fileData, sms } = data;
+
+  //     // message decrypt
+  //     const message =
+  //       typeof sms === "string" && !sms.startsWith("http")
+  //         ? decryptMessage(sms)
+  //         : sms;
+
+  //     if (file?.fileData && file?.fileType) {
+  //       fileURL = `data:${file.fileType};base64,${file.fileData}`;
+  //       fileName = file.fileName || null;
+  //       fileType = file.fileType || null;
+  //     }
+  //     let id, avatar, name;
+  //     if (senderId === userId) {
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           sender: "You",
+  //           identifier,
+  //           message,
+  //           fileName,
+  //           fileType,
+  //           fileURL,
+  //         },
+  //       ]);
+  //     } else {
+  //       for (const member of groupMembers) {
+  //         if (senderId === member.id) {
+  //           id = member.id;
+  //           avatar = member.avatar;
+  //           name = member.name;
+  //         }
+  //       }
+  //       setMessages((prev) => [
+  //         ...prev,
+  //         {
+  //           id,
+  //           avatar,
+  //           name,
+  //           identifier,
+  //           message,
+  //           fileName,
+  //           fileType,
+  //           fileURL,
+  //         },
+  //       ]);
+  //     }
+  //   });
+
+  //   socket.on("requestSender", (data) => {
+  //     if (data) {
+  //       setRequestSender("receiver");
+  //       socket.on("storedSms", (data) => {
+  //         const { identifier, file, text } = data;
+  //         let message =
+  //           typeof text === "string" && !text.startsWith("http")
+  //             ? decryptMessage(text)
+  //             : text;
+  //         let fileURL = null;
+  //         let fileName = null;
+  //         let fileType = null;
+  //         if (file && file.fileData && file.fileType) {
+  //           // For images, videos, pdf, etc.
+  //           fileURL = `data:${file.fileType};base64,${file.fileData}`;
+  //           fileName = file.fileName || null;
+  //           fileType = file.fileType || null;
+  //         }
+  //         setMessages((prev) => [
+  //           ...prev,
+  //           {
+  //             sender: "Sender",
+  //             identifier,
+  //             message,
+  //             fileName,
+  //             fileType,
+  //             fileURL,
+  //           },
+  //         ]);
+  //       })
+  //     }
+  //   }
+  //   );
+
+  //   socket.on("requestSender", (data) => {
+  //     console.log("DONG");
+
+  //     if (data) {
+  //       setRequestSender("receiver");
+  //     }
+  //   });
+
+  //   return () => {
+  //     socket.off("state");
+  //     socket.off("checkDisconnect");
+  //     socket.off("receive message");
+  //     socket.off("storedSms");
+  //   };
+  // }, []);
+
+  // // Managing Contextmenu 
+  // const openContextMenu = (msg, event) => {
+  //   event.preventDefault();
+  //   const message = msg.message,
+  //     identifier = msg.identifier,
+  //     isOwnMessage = msg.sender === "You",
+  //     delIdentifier = msg.delIdentifier;
+  //   const rect = event.target.getBoundingClientRect();
+
+  //   let positionX = isOwnMessage ? rect.left - 180 : rect.right + 10;
+  //   let positionY = rect.top + window.scrollY;
+
+  //   const menuHeight = 150; // Approx height of the context menu
+  //   const viewportHeight = window.innerHeight;
+
+  //   if (rect.top + menuHeight > viewportHeight) {
+  //     // Position upwards if it overflows
+  //     positionY = rect.bottom + window.scrollY - menuHeight;
+  //   }
+
+  //   if (delIdentifier) {
+  //     setDelFunc(true);
+  //   } else {
+  //     setContextMenu({
+  //       show: true,
+  //       x: positionX,
+  //       y: positionY,
+  //       message: "",
+  //     });
+  //     setDeleteMessage(message);
+  //     document.body.style.overflow = "hidden";
+  //   }
+  //   setIdentifier(identifier);
+  // };
+
+  // const closeContextMenu = () => {
+  //   setContextMenu({
+  //     show: false,
+  //     x: 0,
+  //     y: 0,
+  //     message,
+  //   });
+  // };
+
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (contextRef.current && !contextRef.current.contains(event.target)) {
+  //       closeContextMenu();
+  //     }
+  //   };
+
+  //   if (contextMenu.show) {
+  //     document.addEventListener("mousedown", handleClickOutside);
+  //   } else {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, [contextMenu.show]);
+
+  // // Delete sms
+  // const Delete = (sender) => {
+  //   console.log(identifier);
+  //   setMessages((prevMessages) =>
+  //     prevMessages.map((msg) => {
+  //       if (msg.identifier === identifier) {
+  //         if (sender === "You") {
+  //           console.log("delete everyone");
+  //           socket.emit("delete-everyone", { OwnId, ToId, identifier });
+  //           return {
+  //             ...msg,
+  //             identifier,
+  //             delIdentifier: "D",
+  //             name: "",
+  //             message: "This message was deleted by you",
+  //           };
+  //         } else if (sender === "Me") {
+  //           console.log("delete me");
+
+  //           socket.emit("delete-me", {
+  //             OwnId,
+  //             ToId,
+  //             identifier,
+  //             sender: "You",
+  //           });
+  //           return {
+  //             ...msg,
+  //             identifier,
+  //             delIdentifier: "D",
+  //             name: "",
+  //             message: "This message was deleted by you",
+  //           };
+  //         } else if (sender === "Me1") {
+  //           socket.emit("delete-me", {
+  //             OwnId,
+  //             ToId,
+  //             identifier,
+  //             sender: "me",
+  //           });
+  //           return {
+  //             ...msg,
+  //             identifier: "",
+  //             delIdentifier: "D",
+  //             name: "",
+  //             message: "This message was deleted by you",
+  //           };
+  //         } else {
+  //           socket.emit("delete-me", {
+  //             OwnId,
+  //             ToId,
+  //             identifier,
+  //             sender: "me",
+  //           });
+  //           return {
+  //             ...msg,
+  //             identifier: "",
+  //             delIdentifier: "",
+  //             name: "",
+  //             message: "",
+  //           };
+  //         }
+  //       }
+  //       return msg;
+  //     }),
+  //   );
+  //   setDeleteMessage("");
+  //   closeContextMenu();
+  //   setDelFunc(false);
+  //   if (everyone) setEveryone(false);
+  // };
+
+  // socket.on("delete", (identifier) => {
+  //   console.log("DelIdentiF");
+  //   setMessages((prevMessages) =>
+  //     prevMessages.map((msg) =>
+  //       msg.identifier === identifier
+  //         ? {
+  //           ...msg,
+  //           name: "",
+  //           delIdentifier: "D",
+  //           message: "This message was deleted by sender",
+  //         }
+  //         : msg,
+  //     ),
+  //   );
+  // });
+
+  // const deleteFunction = () => {
+  //   setMessages((prevMessages) =>
+  //     prevMessages.map((msg) => {
+  //       if (msg.identifier === identifier) {
+  //         if (msg.sender === "You") {
+  //           setEveryone(true);
+  //         } else {
+  //           setEveryone(false);
+  //         }
+  //       }
+  //       return msg;
+  //     }),
+  //   );
+  //   closeContextMenu();
+  //   setDelFunc(true);
+  // };
+
+  // // Copy sms
+  // const copyFunction = () => {
+  //   setMessages((prevMessages) => {
+  //     const copiedMessage = prevMessages.find(
+  //       (msg) => msg.identifier === identifier,
+  //     );
+  //     if (copiedMessage) {
+  //       navigator.clipboard
+  //         .writeText(copiedMessage.message || "")
+  //         .then(() => {
+  //           console.log("Message copied successfully!");
+  //         })
+  //         .catch((err) => {
+  //           console.error("Failed to copy message:", err);
+  //         });
+  //     }
+  //     return prevMessages;
+  //   });
+  //   closeContextMenu();
+  // };
+
+  // // Video call system
+  // const getStream = async () => {
+  //   try {
+  //     const stream = await navigator.mediaDevices.getUserMedia({
+  //       video: true,
+  //       audio: true,
+  //     });
+  //     setLocalStream(stream);
+  //     localVideoRef.current.srcObject = stream;
+  //     return stream;
+  //   } catch (error) {
+  //     console.error("Error accessing media devices:", error);
+  //   }
+  // };
+
+  // const createPeerConnection = async () => {
+  //   let stream = localStream;
+  //   if (!stream) stream = await getStream();
+  //   peerConnectionRef.current = new RTCPeerConnection(configuration);
+  //   peerConnectionRef.current.onicecandidate = (event) => {
+  //     if (event.candidate) {
+  //       socket.emit("ice-candidate", event.candidate, receiverId);
+  //     } else {
+  //       console.log("Candidate not work");
+  //     }
+  //   };
+  //   peerConnectionRef.current.ontrack = (event) => {
+  //     if (event.streams[0]) {
+  //       setRemoteStream(event.streams[0]);
+  //       remoteVideoRef.current.srcObject = event.streams[0];
+  //       console.log("Succes");
+  //     } else {
+  //       console.log("not success");
+  //     }
+  //   };
+  //   if (stream) {
+  //     stream.getTracks().forEach((track) => {
+  //       peerConnectionRef.current.addTrack(track, stream);
+  //     });
+  //     console.log("G");
+  //   }
+  // };
+
+  // const createOffer = async () => {
+  //   const offer = await peerConnectionRef.current.createOffer();
+  //   await peerConnectionRef.current.setLocalDescription(offer);
+  //   socket.emit("offer", offer, receiverId);
+  // };
+
+  // useEffect(() => {
+  //   socket.on("offer", async (offer) => {
+  //     setIsVideo(true);
+
+  //     if (!peerConnectionRef.current) {
+  //       await createPeerConnection();
+  //     }
+  //     const pc = peerConnectionRef.current;
+  //     // Remote Description set করা (safe check সহ)
+  //     if (
+  //       pc.signalingState === "stable" ||
+  //       pc.signalingState === "have-local-offer"
+  //     ) {
+  //       await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  //       console.log("✅ Remote offer set");
+  //       const answer = await peerConnectionRef.current.createAnswer();
+  //       await peerConnectionRef.current.setLocalDescription(answer);
+  //       socket.emit("answer", answer, receiverId);
+  //     } else {
+  //       console.warn(
+  //         "⚠ Cannot set offer, invalid signaling state:",
+  //         pc.signalingState,
+  //       );
+  //       return;
+  //     }
+  //   });
+
+  //   const handleAnswer = async (answer) => {
+  //     const pc = peerConnectionRef.current;
+  //     if (!pc) return;
+
+  //     console.log("Before setting answer, signalingState:", pc.signalingState);
+
+  //     if (
+  //       pc.signalingState === "have-local-offer" &&
+  //       pc.remoteDescription === null
+  //     ) {
+  //       try {
+  //         await pc.setRemoteDescription(answer);
+  //         console.log("✅ Remote answer set successfully");
+  //       } catch (err) {
+  //         console.error("❌ Error setting remote answer:", err);
+  //       }
+  //     } else {
+  //       console.warn("⚠ Skipping answer: Already stable or answer set");
+  //     }
+  //   };
+
+  //   socket.on("ice-candidate", async (candidate) => {
+  //     const pc = peerConnectionRef.current;
+  //     if (pc && candidate) {
+  //       try {
+  //         await pc.addIceCandidate(new RTCIceCandidate(candidate));
+  //         console.log("✅ ICE candidate added");
+  //       } catch (error) {
+  //         console.error("❌ Error adding ICE candidate:", error);
+  //       }
+  //     }
+  //   });
+
+  //   socket.on("answer", handleAnswer);
+  //   return () => {
+  //     socket.off("offer");
+  //     socket.off("answer");
+  //     socket.off("ice-candidate");
+  //   };
+  // }, []);
+
+  // const videoCallSystem = async () => {
+  //   setIsVideo(true);
+  //   await getStream();
+  //   await createPeerConnection();
+  //   await createOffer();
+  // };
+
+  // const closeZoom = () => {
+  //   setIsZoomed(false);
+  // };
+
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (zoomcontext.current && !zoomcontext.current.contains(event.target)) {
+  //       closeZoom();
+  //     }
+  //   };
+  //   if (isZoomed) {
+  //     document.addEventListener("mousedown", handleClickOutside);
+  //   } else {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   }
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, [isZoomed]);
+
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (profileRef.current && !profileRef.current.contains(event.target)) {
+  //       closeprofileContext();
+  //     }
+  //   };
+
+  //   if (profileDetails) {
+  //     document.addEventListener("mousedown", handleClickOutside);
+  //   } else {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, [profileDetails]);
+
+  // const openProfileContext = (e) => {
+  //   e.preventDefault();
+  //   setproFileDetails(true);
+  //   setMenuAnimation(false);
+  //   setTimeout(() => setMenuAnimation(true), 300);
+  // };
+
+  // const closeprofileContext = () => {
+  //   setproFileDetails(false);
+  //   setMenuAnimation(false);
+  // };
+
+  // const overview = (e) => {
+  //   e.preventDefault();
+  //   setActiveSection("profile");
+  // };
+
+  // const media = (e) => {
+  //   e.preventDefault();
+  //   setActiveSection("media");
+  // };
+
+  // const files = (e) => {
+  //   e.preventDefault();
+  //   setActiveSection("files");
+  // };
+
+  // const links = (e) => {
+  //   e.preventDefault();
+  //   setActiveSection("links");
+  // };
+
+  // const groups = (e) => {
+  //   e.preventDefault();
+  //   setActiveSection("groups");
+  // };
+
+  // // Show receiver's profile
+  // // useEffect(() => {
+  // //   const profile = async () => {
+  // //     console.log("receiverProfile", receiverId, receiverFullName, receiverAvatar);
+  // //     try {
+  // //       const response = await axios.get(
+  // //         `/api/v1/users/profile?userId=${receiverId}`,
+  // //       );
+  // //       console.log("Res", response);
+  // //       setReceiverAbout(response.data.data.about);
+  // //     } catch (error) {
+  // //       console.error("Error fetching profile:", error);
+  // //     }
+  // //   };
+  // //   profile();
+  // // }, [activeSection]);
+
+  // // Sending Message
+  // const sendMessage = async () => {
+  //   if (!message.trim() && !file) return;
+  //   const sms = encryptMessage(message);
+  //   let fileBuffer;
+  //   let fileType;
+  //   let fileURL;
+  //   let fileName;
+  //   if (file) {
+  //     fileBuffer = await file.arrayBuffer();
+  //     fileName = file.name;
+  //     fileType = file.type;
+  //     fileURL = URL.createObjectURL(
+  //       new Blob([new Uint8Array(fileBuffer)], { type: fileType }),
+  //     );
+  //   }
+  //   const identifier = uuidv4();
+  //   const sendItem = {
+  //     userId,
+  //     userName,
+  //     userAvatar,
+  //     receiverId,
+  //     receiverName,
+  //     receiverAvatar,
+  //     identifier,
+  //     sms,
+  //     fileName,
+  //     fileType,
+  //     fileBuffer,
+  //   };
+  //   if (state === "online") {
+  //     socket.emit("send message", sendItem);
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { sender: "You", identifier, message, fileName, fileType, fileURL },
+  //     ]);
+  //     setFile(null);
+  //     fileInputRef.current.value = "";
+  //     if (message) setMessage("");
+  //   } else {
+  //     socket.emit("offline_User sms", sendItem);
+  //     console.log("offline");
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       { sender: "You", identifier, message, fileName, fileType, fileURL },
+  //     ]);
+  //     setFile(null);
+  //     fileInputRef.current.value = "";
+  //     if (message) setMessage("");
+  //   }
+  // };
+
+  // // Checking friend or not
+  // useEffect(() => {
+  //   socket.on("friends", (data) => {
+  //     const { requestState, participantType } = data;
+  //     console.log("Friends", requestState, participantType);
+
+  //     setTimeout(() => {
+  //       if (requestState === "reject") {
+  //         setRequestState("reject");
+  //         if (participantType === "sender") {
+  //           setParticipantType("receiver");
+  //         }
+  //       } else if (requestState === "sent") {
+  //         setRequestState("sent");
+  //         if (participantType === "receiver") {
+  //           setParticipantType("receiver");
+  //         }
+  //         console.log(participantType);
+  //       } else if (requestState === "friend") {
+  //         setRequestState("friend");
+  //         if (participantType === "receiver") {
+  //           setParticipantType("receiver");
+  //         }
+  //       } else if (requestState === "noFriend") {
+  //         console.log("Work");
+  //         setRequestState("noFriend");
+  //       }
+  //     }, 100);
+  //   });
+  //   return () => {
+  //     socket.off("friends");
+  //   };
+  // }, []);
+
+  // // Code for sending requests
+  // const sendRequest = () => {
+  //   const identifier = uuidv4();
+  //   socket.emit("sendRequest", {
+  //     userId,
+  //     userName,
+  //     userAvatar,
+  //     receiverId,
+  //     receiverName,
+  //     receiverAvatar,
+  //   });
+  //   setRequestState("sent");
+  // };
+
+  // // Code for accept or reject requests
+  // const replyRequest = (accept) => {
+  //   const identifier = uuidv4();
+
+  //   socket.emit("acceptRequest", {
+  //     userId,
+  //     userName,
+  //     userAvatar,
+  //     receiverId,
+  //     receiverName,
+  //     receiverAvatar,
+  //     identifier,
+  //     accept: accept ? 1 : 0, // backend clarity
+  //   });
+
+  //   if (accept) {
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       {
+  //         sender: "You",
+  //         identifier,
+  //         message: `You accepted ${receiverName}'s request`,
+  //       },
+  //     ]);
+  //     setRequestState("friend");
+  //     console.log("Accept");
+  //   } else {
+  //     setMessages((prev) => [
+  //       ...prev,
+  //       {
+  //         sender: "You", // ❌ "sender" নয়
+  //         identifier,
+  //         message: `You rejected friend request of ${receiverName}`,
+  //       },
+  //     ]);
+  //     setRequestState("reject");
+  //     console.log("Reject");
+  //   }
+  // };
+
+  // // Code for accept or reject reply
+  // useEffect(() => {
+  //   socket.on("requestReply", (accept) => {
+  //     console.log("Accept", accept);
+  //     if (accept) {
+  //       setRequestState("friend");
+  //     } else {
+  //       setRequestState("reject");
+  //     }
+  //   });
+  // }, []);

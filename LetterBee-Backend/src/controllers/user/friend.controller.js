@@ -86,8 +86,11 @@ const searchUser = asyncHandler(async (req, res) => {
         if (!processedUserIds.has(user._id.toString())) {
           userData.push({
             _id: user._id,
+            email: user.email,
             fullName: user.fullName,
+            userName: user.userName,
             avatar: user.avatar || "",
+            about: user.about
           });
         }
       });
@@ -103,4 +106,3 @@ export {
   searchUser,
   friends,
 };
-                
