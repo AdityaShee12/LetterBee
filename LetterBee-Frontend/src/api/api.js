@@ -5,7 +5,7 @@ import { store } from "../app/store";
 // BASE CONFIG
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "http://localhost:8000/";
+    "https://letterbee-backend.onrender.com";
 
 const api = axios.create({
     baseURL: API_URL,
