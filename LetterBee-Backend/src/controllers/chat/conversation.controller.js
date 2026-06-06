@@ -3,7 +3,7 @@ import { Message } from "../../models/chat/message.model.js";
 
 const getUserConversations = asyncHandler(async (req, res) => {
     try {
-        const { userId } = req.query; console.log("userId", userId);
+        const { userId } = req.query;
         if (!userId) {
             return res.status(400).json({ error: "User ID is required" });
         }
@@ -23,6 +23,8 @@ const getUserConversations = asyncHandler(async (req, res) => {
                         } else {
                             chatter = "sender";
                         }
+                        console.log("user",user);
+                        
                         userData.push({
                             _id: user.id,
                             fullName: user.name,

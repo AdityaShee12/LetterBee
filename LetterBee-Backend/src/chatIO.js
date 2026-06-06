@@ -10,7 +10,6 @@ import { Notification } from "./models/user/notification.model.js";
 import fs from "fs";
 import dotenv from "dotenv";
 import { FRONTEND_API } from "./Frontend_API.js";
-import { transporter } from "./config/mail.config.js";
 
 dotenv.config({ path: "./.env" });
 
@@ -30,7 +29,7 @@ let users = {},
 io.on("connection", (socket) => {
 
   // User Joined on chat and see how many people are seeing my account
-  socket.on("new-user-joined", async ({senderId, userName}) => {
+  socket.on("new-user-joined", async ({ senderId, userName }) => {
     socket.join(senderId);
     if (users[senderId]) {
       users[senderId].socketId = socket.id;
@@ -153,7 +152,7 @@ io.on("connection", (socket) => {
     try {
       const {
         senderId,
-        userName,
+        fullName,
         senderAvatar,
         receiverId,
         receiverFullName,
@@ -219,7 +218,7 @@ io.on("connection", (socket) => {
           } else {
             let newChat = new Message({
               users: [
-                { id: senderId, name: userName, avatar: senderAvatar },
+                { id: senderId, name: fullName, avatar: senderAvatar },
                 { id: receiverId, name: receiverFullName, avatar: receiverAvatar },
               ],
               messages: [
@@ -264,7 +263,7 @@ io.on("connection", (socket) => {
             );
           } else {
             await Notification.create({
-              sender: { id: senderId, name: userName },
+              sender: { id: senderId, name: fullName },
               receiver: { id: receiverId, name: receiverFullName },
               identifier,
               messages: [newMessage],

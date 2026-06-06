@@ -6,6 +6,7 @@ import { uploadOnCloudinary } from "../../utils/storage/cloudinary.js";
 
 const profilePicChange = asyncHandler(async (req, res) => {
   const { userId } = req.body;
+  console.log(":PROPicChange");
   if (!userId) return res.status(400).json({ message: "User ID missing" });
   const profileData = await User.findById(userId);
   if (!profileData) throw new ApiError(404, "User not found");
@@ -24,7 +25,7 @@ const profilePicChange = asyncHandler(async (req, res) => {
 
 const profileAboutChange = asyncHandler(async (req, res) => {
   const { userId, about } = req.body;
-
+  console.log("ProABTCHNG", userId, about);
   if (!userId) return res.status(400).json({ message: "User ID missing" });
 
   const profileData = await User.findById(userId);

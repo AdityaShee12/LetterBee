@@ -43,6 +43,7 @@ api.interceptors.request.use(
 
 let isRefreshing = false;
 let failedQueue = [];
+
 const processQueue = (
     error,
     token = null
@@ -246,7 +247,7 @@ export const authAPI = {
     logout: async () =>
         apiRequest(() =>
             api.post(
-                "auth/logout"
+                "auth/logout", {},
             )
         ),
 
@@ -281,7 +282,7 @@ export const authAPI = {
     profilePicChange: async (data) =>
         apiRequest(() =>
             api.post(
-                "/auth/profilePicChange",
+                "/api/profilePicChange",
                 data
             )
         ),
@@ -289,7 +290,7 @@ export const authAPI = {
     profileAboutChange: async (data) =>
         apiRequest(() =>
             api.post(
-                "/auth/profileAboutChange",
+                "/api/profileAboutChange",
                 data
             )
         ),
@@ -308,7 +309,7 @@ export const chatAPI = {
 export const userAPI = {
     searchUser: async ({ searchText, userId }) =>
         apiRequest(() =>
-        api.get(`/users/searchUser?query=${searchText}&userId=${userId}`)),
+            api.get(`/users/searchUser?query=${searchText}&userId=${userId}`)),
 }
 
 export default api;

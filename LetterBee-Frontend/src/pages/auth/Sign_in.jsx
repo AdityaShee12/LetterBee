@@ -61,7 +61,7 @@ const Sign_in = () => {
       }
     }
   };
-  
+
   const errorHandler = ({ error }) => {
     setLoading(false);
     if (error === "Username or email is required") {
@@ -106,357 +106,34 @@ const Sign_in = () => {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        .login-root * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        .login-root {
-          font-family: 'DM Sans', sans-serif;
-          min-height: 100vh;
-          background: #0d0d0f;
-          position: relative;
-          overflow: hidden;
-        }
-
-        /* Animated background blobs */
-        .lb-blob {
-          position: fixed;
-          border-radius: 50%;
-          filter: blur(90px);
-          opacity: 0.18;
-          animation: lbBlobFloat 12s ease-in-out infinite alternate;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .lb-blob-1 {
-          width: 520px; height: 520px;
-          background: #4337e6;
-          top: -120px; left: -120px;
-          animation-delay: 0s;
-        }
-        .lb-blob-2 {
-          width: 380px; height: 380px;
-          background: #a78bfa;
-          bottom: -80px; right: -80px;
-          animation-delay: -4s;
-        }
-        .lb-blob-3 {
-          width: 260px; height: 260px;
-          background: #38bdf8;
-          top: 50%; left: 55%;
-          animation-delay: -8s;
-        }
-        @keyframes lbBlobFloat {
-          0%   { transform: translate(0, 0) scale(1); }
-          100% { transform: translate(30px, 40px) scale(1.08); }
-        }
-
-        /* Grain overlay */
-        .lb-grain {
-          position: fixed;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-          background-repeat: repeat;
-          background-size: 180px;
-          opacity: 0.5;
-        }
-
-        /* Loading screen */
-        .lb-loading {
-          position: fixed;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: #0d0d0f;
-          z-index: 100;
-        }
-        .lb-loader-ring {
-          width: 52px; height: 52px;
-          border: 3px solid rgba(67,55,230,0.2);
-          border-top-color: #4337e6;
-          border-radius: 50%;
-          animation: lbSpin 0.8s linear infinite;
-        }
-        @keyframes lbSpin { to { transform: rotate(360deg); } }
-        .lb-loading-text {
-          margin-top: 18px;
-          color: rgba(255,255,255,0.35);
-          font-size: 13px;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          font-weight: 500;
-        }
-
-        /* Page layout */
-        .lb-page-wrapper {
-          position: relative;
-          z-index: 2;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 24px 16px;
-        }
-
-        .lb-column {
-          width: 100%;
-          max-width: 420px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          animation: lbFadeUp 0.5s ease both;
-        }
-        @keyframes lbFadeUp {
-          from { opacity: 0; transform: translateY(22px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Main card */
-        .lb-card {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 20px;
-          padding: 36px 32px 32px;
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .lb-logo {
-          width: 180px;
-          margin-bottom: 28px;
-          filter: brightness(0) invert(1);
-          opacity: 0.92;
-        }
-
-        /* Field wrapper */
-        .lb-field-wrap {
-          position: relative;
-          width: 100%;
-          margin-bottom: 20px;
-        }
-
-        .lb-input {
-          width: 100%;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 12px;
-          padding: 13px 16px;
-          color: rgba(255,255,255,0.9);
-          font-size: 14.5px;
-          font-family: 'DM Sans', sans-serif;
-          outline: none;
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .lb-input::placeholder { color: rgba(255,255,255,0.22); }
-        .lb-input:focus {
-          border-color: rgba(67,55,230,0.7);
-          background: rgba(67,55,230,0.06);
-        }
-        .lb-input[type=number]::-webkit-inner-spin-button,
-        .lb-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-        .lb-input[type=number] { -moz-appearance: textfield; }
-
-        /* Password wrapper */
-        .lb-pw-wrap {
-          position: relative;
-          width: 100%;
-          margin-bottom: 20px;
-        }
-        .lb-pw-wrap .lb-input {
-          padding-right: 48px;
-        }
-        .lb-eye-btn {
-          position: absolute;
-          right: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: rgba(255,255,255,0.3);
-          font-size: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: color 0.18s;
-          padding: 0;
-        }
-        .lb-eye-btn:hover { color: rgba(255,255,255,0.65); }
-
-        /* Primary button */
-        .lb-btn-primary {
-          width: 100%;
-          height: 50px;
-          background: linear-gradient(135deg, #4337e6 0%, #6d28d9 100%);
-          border: none;
-          border-radius: 12px;
-          color: #fff;
-          font-size: 15px;
-          font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          letter-spacing: 0.02em;
-          transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-          box-shadow: 0 4px 24px rgba(67,55,230,0.35);
-          margin-bottom: 0;
-        }
-        .lb-btn-primary:hover {
-          opacity: 0.92;
-          transform: translateY(-1px);
-          box-shadow: 0 8px 32px rgba(67,55,230,0.45);
-        }
-        .lb-btn-primary:active { transform: translateY(0); }
-
-        /* Forgot password link */
-        .lb-forgot {
-          margin-top: 14px;
-          color: rgba(255,255,255,0.32);
-          font-size: 13.5px;
-          cursor: pointer;
-          text-align: center;
-          transition: color 0.18s;
-          letter-spacing: 0.01em;
-        }
-        .lb-forgot:hover { color: #7c6ff7; }
-
-        /* Footer card */
-        .lb-footer-card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 14px;
-          padding: 18px 24px;
-          text-align: center;
-          color: rgba(255,255,255,0.35);
-          font-size: 14px;
-        }
-        .lb-footer-card .lb-link {
-          color: #7c6ff7;
-          cursor: pointer;
-          font-weight: 600;
-          transition: color 0.18s;
-        }
-        .lb-footer-card .lb-link:hover { color: #a89ff9; }
-
-        /* Error modal */
-        .lb-modal-backdrop {
-          position: fixed;
-          inset: 0;
-          z-index: 200;
-          background: rgba(0,0,0,0.65);
-          backdrop-filter: blur(6px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 16px;
-          animation: lbFadeIn 0.18s ease both;
-        }
-        @keyframes lbFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .lb-modal-box {
-          background: #16161e;
-          border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 20px;
-          padding: 36px 32px 28px;
-          width: 100%;
-          max-width: 380px;
-          text-align: center;
-          animation: lbScaleIn 0.2s ease both;
-        }
-        @keyframes lbScaleIn {
-          from { transform: scale(0.94); opacity: 0; }
-          to   { transform: scale(1);    opacity: 1; }
-        }
-        .lb-modal-icon {
-          width: 48px; height: 48px;
-          background: rgba(239,68,68,0.12);
-          border: 1px solid rgba(239,68,68,0.25);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 16px;
-          font-size: 20px;
-        }
-        .lb-modal-title {
-          color: #ef4444;
-          font-size: 16px;
-          font-weight: 700;
-          margin-bottom: 10px;
-          font-family: 'Playfair Display', serif;
-        }
-        .lb-modal-msg {
-          color: rgba(255,255,255,0.55);
-          font-size: 14px;
-          line-height: 1.6;
-          margin-bottom: 24px;
-        }
-        .lb-modal-btn {
-          width: 100%;
-          height: 46px;
-          background: linear-gradient(135deg, #4337e6, #6d28d9);
-          border: none;
-          border-radius: 11px;
-          color: #fff;
-          font-size: 14.5px;
-          font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          transition: opacity 0.2s;
-        }
-        .lb-modal-btn:hover { opacity: 0.88; }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-          .lb-card { padding: 28px 18px 24px; }
-          .lb-logo { width: 150px; }
-        }
-      `}</style>
-
-      <div className="login-root">
-        <div className="lb-blob lb-blob-1" />
-        <div className="lb-blob lb-blob-2" />
-        <div className="lb-blob lb-blob-3" />
-        <div className="lb-grain" />
-
+      <div className="font-sans min-h-screen bg-[#f0f1f8] relative overflow-hidden">
         {loading ? (
-          <div className="lb-loading">
-            <div className="lb-loader-ring" />
-            <p className="lb-loading-text">Loading</p>
+          <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#f0f1f8] z-[100]">
+            <div className="w-[52px] h-[52px] border-[3px] border-[#3D4DB7]/20 border-t-[#3D4DB7] rounded-full animate-spin" />
+            <p className="mt-[18px] text-[#3D4DB7]/50 text-[13px] tracking-[0.12em] uppercase font-medium">Loading</p>
           </div>
         ) : (
-          <div className="lb-page-wrapper">
-            <div className="lb-column">
+          <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-6">
+            <div className="w-full max-w-[420px] flex flex-col gap-3">
 
               {/* Main card */}
-              <div className="lb-card">
-                <img src="/LetterBee.png" alt="LetterBee" className="lb-logo" />
+              <div className="bg-white border border-[#d6d8ef] rounded-2xl px-8 py-9 flex flex-col items-center">
+
+                <img src="/LetterBee.png" alt="LetterBee" className="w-44 mb-7 opacity-90" />
 
                 {signIn ? (
-                  /* ── Sign In form ── */
-                  <div style={{ width: '100%' }}>
+                  /* Sign In form */
+                  <div className="w-full">
+
                     {/* Username / email */}
-                    <div className="lb-field-wrap">
+                    <div className="w-full mb-5">
                       <input
                         type="text"
                         placeholder="Username or email"
                         value={email || userName}
                         onChange={(e) => {
-
                           const value = e.target.value;
-
-                          const isEmail =
-                            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
+                          const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
                           if (isEmail) {
                             setEmail(value);
                             setuserName("");
@@ -466,22 +143,22 @@ const Sign_in = () => {
                           }
                         }}
                         required
-                        className="lb-input"
+                        className="w-full bg-[#f4f5fb] border-[1.5px] border-[#d6d8ef] rounded-xl px-4 py-3 text-[#1a1a2e] text-[14.5px] outline-none focus:border-[#3D4DB7] focus:bg-[#eef0fb] placeholder:text-[#aaa] transition-all"
                       />
                     </div>
 
                     {/* Password */}
-                    <div className="lb-pw-wrap">
+                    <div className="relative w-full mb-5">
                       <input
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="lb-input"
+                        className="w-full bg-[#f4f5fb] border-[1.5px] border-[#d6d8ef] rounded-xl px-4 py-3 pr-12 text-[#1a1a2e] text-[14.5px] outline-none focus:border-[#3D4DB7] focus:bg-[#eef0fb] placeholder:text-[#aaa] transition-all"
                       />
                       <button
-                        className="lb-eye-btn"
+                        className="absolute right-[14px] top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[#aaa] hover:text-[#3D4DB7] text-base flex items-center justify-center transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
                         type="button"
                       >
@@ -489,73 +166,86 @@ const Sign_in = () => {
                       </button>
                     </div>
 
-                    <button onClick={handleLogin} className="lb-btn-primary">
+                    <button
+                      onClick={handleLogin}
+                      className="w-full h-[50px] bg-[#3D4DB7] hover:bg-[#3041a3] text-white rounded-xl text-[15px] font-semibold tracking-wide transition-all shadow-[0_4px_24px_rgba(61,77,183,0.25)] hover:shadow-[0_8px_32px_rgba(61,77,183,0.35)] hover:-translate-y-px active:translate-y-0"
+                    >
                       Sign in
                     </button>
 
-                    <div className="lb-forgot" onClick={forgetPassword}>
+                    <p
+                      onClick={forgetPassword}
+                      className="mt-[14px] text-[#aaa] hover:text-[#3D4DB7] text-[13.5px] cursor-pointer text-center transition-colors"
+                    >
                       Forgot password?
-                    </div>
+                    </p>
                   </div>
                 ) : (
-                  /* ── OTP / reset flow ── */
-                  <div style={{ width: '100%' }}>
+                  /* OTP / reset flow */
+                  <div className="w-full">
                     {otpVerified && (
                       <>
-                        <div className="lb-field-wrap">
+                        <div className="w-full mb-5">
                           <input
                             type="number"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}
                             placeholder="Enter your OTP"
-                            className="lb-input"
+                            className="w-full bg-[#f4f5fb] border-[1.5px] border-[#d6d8ef] rounded-xl px-4 py-3 text-[#1a1a2e] outline-none focus:border-[#3D4DB7] focus:bg-[#eef0fb] placeholder:text-[#aaa] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             style={{ fontSize: '20px', letterSpacing: '0.25em' }}
                           />
                         </div>
-                        <button onClick={verify} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+                        <button
+                          onClick={verify}
+                          className="w-full h-[50px] bg-[#3D4DB7] hover:bg-[#3041a3] text-white rounded-xl text-[15px] font-semibold tracking-wide transition-all shadow-[0_4px_24px_rgba(61,77,183,0.25)] hover:shadow-[0_8px_32px_rgba(61,77,183,0.35)] hover:-translate-y-px active:translate-y-0 mb-4"
+                        >
                           Verify OTP
                         </button>
                       </>
                     )}
-
                     {createPassword && (
                       <>
-                        <div className="lb-pw-wrap">
+                        <div className="relative w-full mb-5">
                           <input
                             type={showPassword ? "text" : "password"}
                             placeholder="New password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            className="lb-input"
+                            className="w-full bg-[#f4f5fb] border-[1.5px] border-[#d6d8ef] rounded-xl px-4 py-3 pr-12 text-[#1a1a2e] text-[14.5px] outline-none focus:border-[#3D4DB7] focus:bg-[#eef0fb] placeholder:text-[#aaa] transition-all"
                           />
                           <button
-                            className="lb-eye-btn"
+                            className="absolute right-[14px] top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-[#aaa] hover:text-[#3D4DB7] text-base flex items-center justify-center transition-colors"
                             onClick={() => setShowPassword(!showPassword)}
                             type="button"
                           >
                             {showPassword ? <FaEyeSlash /> : <FaEye />}
                           </button>
                         </div>
-                        <button onClick={passwordMaking} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+                        <button
+                          onClick={passwordMaking}
+                          className="w-full h-[50px] bg-[#3D4DB7] hover:bg-[#3041a3] text-white rounded-xl text-[15px] font-semibold tracking-wide transition-all shadow-[0_4px_24px_rgba(61,77,183,0.25)] hover:shadow-[0_8px_32px_rgba(61,77,183,0.35)] hover:-translate-y-px active:translate-y-0 mb-4"
+                        >
                           Set Password
                         </button>
                       </>
                     )}
-
                     {changePassword && (
                       <>
-                        <div className="lb-field-wrap">
+                        <div className="w-full mb-5">
                           <input
                             type="text"
                             placeholder="Enter your email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="lb-input"
+                            className="w-full bg-[#f4f5fb] border-[1.5px] border-[#d6d8ef] rounded-xl px-4 py-3 text-[#1a1a2e] text-[14.5px] outline-none focus:border-[#3D4DB7] focus:bg-[#eef0fb] placeholder:text-[#aaa] transition-all"
                           />
                         </div>
-                        <button onClick={sendOTP} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+                        <button
+                          onClick={sendOTP}
+                          className="w-full h-[50px] bg-[#3D4DB7] hover:bg-[#3041a3] text-white rounded-xl text-[15px] font-semibold tracking-wide transition-all shadow-[0_4px_24px_rgba(61,77,183,0.25)] hover:shadow-[0_8px_32px_rgba(61,77,183,0.35)] hover:-translate-y-px active:translate-y-0 mb-4"
+                        >
                           Send OTP
                         </button>
                       </>
@@ -563,25 +253,37 @@ const Sign_in = () => {
                   </div>
                 )}
               </div>
-
               {/* Footer */}
-              <div className="lb-footer-card">
+              <div className="bg-white border border-[#d6d8ef] rounded-2xl px-6 py-4 text-center text-[#888] text-sm">
                 Don't have an account?{' '}
-                <span className="lb-link" onClick={() => navigate("/sign_up")}>Sign up</span>
+                <span
+                  onClick={() => navigate("/sign_up")}
+                  className="text-[#3D4DB7] hover:text-[#3041a3] font-semibold cursor-pointer transition-colors"
+                >
+                  Sign up
+                </span>
               </div>
 
             </div>
           </div>
         )}
-
         {/* Error Modal */}
         {errorMessage && (
-          <div className="lb-modal-backdrop">
-            <div className="lb-modal-box">
-              <div className="lb-modal-icon">⚠️</div>
-              <h2 className="lb-modal-title">Something went wrong</h2>
-              <p className="lb-modal-msg">{errorMessage}</p>
-              <button className="lb-modal-btn" onClick={onClose}>Got it</button>
+          <div className="fixed inset-0 z-[200] bg-[#3D4DB7]/15 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white border border-[#d6d8ef] rounded-2xl px-8 py-9 w-full max-w-[380px] text-center">
+              <div className="w-12 h-12 bg-red-50 border border-red-200 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                ⚠️
+              </div>
+              <h2 className="text-red-500 text-base font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Something went wrong
+              </h2>
+              <p className="text-[#888] text-sm leading-relaxed mb-6">{errorMessage}</p>
+              <button
+                onClick={onClose}
+                className="w-full h-[46px] bg-[#3D4DB7] hover:bg-[#3041a3] text-white rounded-xl text-sm font-semibold transition-all"
+              >
+                Got it
+              </button>
             </div>
           </div>
         )}
@@ -591,3 +293,488 @@ const Sign_in = () => {
 }
 
 export default Sign_in;
+
+// return (
+//   <>
+//     <style>{`
+//         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+//         .login-root * {
+//           box-sizing: border-box;
+//           margin: 0;
+//           padding: 0;
+//         }
+
+//         .login-root {
+//           font-family: 'DM Sans', sans-serif;
+//           min-height: 100vh;
+//           background: #0d0d0f;
+//           position: relative;
+//           overflow: hidden;
+//         }
+
+//         /* Animated background blobs */
+//         .lb-blob {
+//           position: fixed;
+//           border-radius: 50%;
+//           filter: blur(90px);
+//           opacity: 0.18;
+//           animation: lbBlobFloat 12s ease-in-out infinite alternate;
+//           pointer-events: none;
+//           z-index: 0;
+//         }
+//         .lb-blob-1 {
+//           width: 520px; height: 520px;
+//           background: #4337e6;
+//           top: -120px; left: -120px;
+//           animation-delay: 0s;
+//         }
+//         .lb-blob-2 {
+//           width: 380px; height: 380px;
+//           background: #a78bfa;
+//           bottom: -80px; right: -80px;
+//           animation-delay: -4s;
+//         }
+//         .lb-blob-3 {
+//           width: 260px; height: 260px;
+//           background: #38bdf8;
+//           top: 50%; left: 55%;
+//           animation-delay: -8s;
+//         }
+//         @keyframes lbBlobFloat {
+//           0%   { transform: translate(0, 0) scale(1); }
+//           100% { transform: translate(30px, 40px) scale(1.08); }
+//         }
+
+//         /* Grain overlay */
+//         .lb-grain {
+//           position: fixed;
+//           inset: 0;
+//           z-index: 1;
+//           pointer-events: none;
+//           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+//           background-repeat: repeat;
+//           background-size: 180px;
+//           opacity: 0.5;
+//         }
+
+//         /* Loading screen */
+//         .lb-loading {
+//           position: fixed;
+//           inset: 0;
+//           display: flex;
+//           flex-direction: column;
+//           align-items: center;
+//           justify-content: center;
+//           background: #0d0d0f;
+//           z-index: 100;
+//         }
+//         .lb-loader-ring {
+//           width: 52px; height: 52px;
+//           border: 3px solid rgba(67,55,230,0.2);
+//           border-top-color: #4337e6;
+//           border-radius: 50%;
+//           animation: lbSpin 0.8s linear infinite;
+//         }
+//         @keyframes lbSpin { to { transform: rotate(360deg); } }
+//         .lb-loading-text {
+//           margin-top: 18px;
+//           color: rgba(255,255,255,0.35);
+//           font-size: 13px;
+//           letter-spacing: 0.12em;
+//           text-transform: uppercase;
+//           font-weight: 500;
+//         }
+
+//         /* Page layout */
+//         .lb-page-wrapper {
+//           position: relative;
+//           z-index: 2;
+//           min-height: 100vh;
+//           display: flex;
+//           align-items: center;
+//           justify-content: center;
+//           padding: 24px 16px;
+//         }
+
+//         .lb-column {
+//           width: 100%;
+//           max-width: 420px;
+//           display: flex;
+//           flex-direction: column;
+//           gap: 12px;
+//           animation: lbFadeUp 0.5s ease both;
+//         }
+//         @keyframes lbFadeUp {
+//           from { opacity: 0; transform: translateY(22px); }
+//           to   { opacity: 1; transform: translateY(0); }
+//         }
+
+//         /* Main card */
+//         .lb-card {
+//           background: rgba(255,255,255,0.04);
+//           border: 1px solid rgba(255,255,255,0.08);
+//           border-radius: 20px;
+//           padding: 36px 32px 32px;
+//           backdrop-filter: blur(20px);
+//           -webkit-backdrop-filter: blur(20px);
+//           display: flex;
+//           flex-direction: column;
+//           align-items: center;
+//         }
+
+//         .lb-logo {
+//           width: 180px;
+//           margin-bottom: 28px;
+//           filter: brightness(0) invert(1);
+//           opacity: 0.92;
+//         }
+
+//         /* Field wrapper */
+//         .lb-field-wrap {
+//           position: relative;
+//           width: 100%;
+//           margin-bottom: 20px;
+//         }
+
+//         .lb-input {
+//           width: 100%;
+//           background: rgba(255,255,255,0.04);
+//           border: 1px solid rgba(255,255,255,0.09);
+//           border-radius: 12px;
+//           padding: 13px 16px;
+//           color: rgba(255,255,255,0.9);
+//           font-size: 14.5px;
+//           font-family: 'DM Sans', sans-serif;
+//           outline: none;
+//           transition: border-color 0.2s, background 0.2s;
+//         }
+//         .lb-input::placeholder { color: rgba(255,255,255,0.22); }
+//         .lb-input:focus {
+//           border-color: rgba(67,55,230,0.7);
+//           background: rgba(67,55,230,0.06);
+//         }
+//         .lb-input[type=number]::-webkit-inner-spin-button,
+//         .lb-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+//         .lb-input[type=number] { -moz-appearance: textfield; }
+
+//         /* Password wrapper */
+//         .lb-pw-wrap {
+//           position: relative;
+//           width: 100%;
+//           margin-bottom: 20px;
+//         }
+//         .lb-pw-wrap .lb-input {
+//           padding-right: 48px;
+//         }
+//         .lb-eye-btn {
+//           position: absolute;
+//           right: 14px;
+//           top: 50%;
+//           transform: translateY(-50%);
+//           background: none;
+//           border: none;
+//           cursor: pointer;
+//           color: rgba(255,255,255,0.3);
+//           font-size: 16px;
+//           display: flex;
+//           align-items: center;
+//           justify-content: center;
+//           transition: color 0.18s;
+//           padding: 0;
+//         }
+//         .lb-eye-btn:hover { color: rgba(255,255,255,0.65); }
+
+//         /* Primary button */
+//         .lb-btn-primary {
+//           width: 100%;
+//           height: 50px;
+//           background: linear-gradient(135deg, #4337e6 0%, #6d28d9 100%);
+//           border: none;
+//           border-radius: 12px;
+//           color: #fff;
+//           font-size: 15px;
+//           font-weight: 600;
+//           font-family: 'DM Sans', sans-serif;
+//           cursor: pointer;
+//           letter-spacing: 0.02em;
+//           transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+//           box-shadow: 0 4px 24px rgba(67,55,230,0.35);
+//           margin-bottom: 0;
+//         }
+//         .lb-btn-primary:hover {
+//           opacity: 0.92;
+//           transform: translateY(-1px);
+//           box-shadow: 0 8px 32px rgba(67,55,230,0.45);
+//         }
+//         .lb-btn-primary:active { transform: translateY(0); }
+
+//         /* Forgot password link */
+//         .lb-forgot {
+//           margin-top: 14px;
+//           color: rgba(255,255,255,0.32);
+//           font-size: 13.5px;
+//           cursor: pointer;
+//           text-align: center;
+//           transition: color 0.18s;
+//           letter-spacing: 0.01em;
+//         }
+//         .lb-forgot:hover { color: #7c6ff7; }
+
+//         /* Footer card */
+//         .lb-footer-card {
+//           background: rgba(255,255,255,0.03);
+//           border: 1px solid rgba(255,255,255,0.07);
+//           border-radius: 14px;
+//           padding: 18px 24px;
+//           text-align: center;
+//           color: rgba(255,255,255,0.35);
+//           font-size: 14px;
+//         }
+//         .lb-footer-card .lb-link {
+//           color: #7c6ff7;
+//           cursor: pointer;
+//           font-weight: 600;
+//           transition: color 0.18s;
+//         }
+//         .lb-footer-card .lb-link:hover { color: #a89ff9; }
+
+//         /* Error modal */
+//         .lb-modal-backdrop {
+//           position: fixed;
+//           inset: 0;
+//           z-index: 200;
+//           background: rgba(0,0,0,0.65);
+//           backdrop-filter: blur(6px);
+//           display: flex;
+//           align-items: center;
+//           justify-content: center;
+//           padding: 16px;
+//           animation: lbFadeIn 0.18s ease both;
+//         }
+//         @keyframes lbFadeIn { from { opacity: 0; } to { opacity: 1; } }
+//         .lb-modal-box {
+//           background: #16161e;
+//           border: 1px solid rgba(255,255,255,0.09);
+//           border-radius: 20px;
+//           padding: 36px 32px 28px;
+//           width: 100%;
+//           max-width: 380px;
+//           text-align: center;
+//           animation: lbScaleIn 0.2s ease both;
+//         }
+//         @keyframes lbScaleIn {
+//           from { transform: scale(0.94); opacity: 0; }
+//           to   { transform: scale(1);    opacity: 1; }
+//         }
+//         .lb-modal-icon {
+//           width: 48px; height: 48px;
+//           background: rgba(239,68,68,0.12);
+//           border: 1px solid rgba(239,68,68,0.25);
+//           border-radius: 50%;
+//           display: flex;
+//           align-items: center;
+//           justify-content: center;
+//           margin: 0 auto 16px;
+//           font-size: 20px;
+//         }
+//         .lb-modal-title {
+//           color: #ef4444;
+//           font-size: 16px;
+//           font-weight: 700;
+//           margin-bottom: 10px;
+//           font-family: 'Playfair Display', serif;
+//         }
+//         .lb-modal-msg {
+//           color: rgba(255,255,255,0.55);
+//           font-size: 14px;
+//           line-height: 1.6;
+//           margin-bottom: 24px;
+//         }
+//         .lb-modal-btn {
+//           width: 100%;
+//           height: 46px;
+//           background: linear-gradient(135deg, #4337e6, #6d28d9);
+//           border: none;
+//           border-radius: 11px;
+//           color: #fff;
+//           font-size: 14.5px;
+//           font-weight: 600;
+//           font-family: 'DM Sans', sans-serif;
+//           cursor: pointer;
+//           transition: opacity 0.2s;
+//         }
+//         .lb-modal-btn:hover { opacity: 0.88; }
+
+//         /* Responsive */
+//         @media (max-width: 480px) {
+//           .lb-card { padding: 28px 18px 24px; }
+//           .lb-logo { width: 150px; }
+//         }
+//       `}</style>
+
+//     <div className="login-root">
+//       <div className="lb-blob lb-blob-1" />
+//       <div className="lb-blob lb-blob-2" />
+//       <div className="lb-blob lb-blob-3" />
+//       <div className="lb-grain" />
+
+//       {loading ? (
+//         <div className="lb-loading">
+//           <div className="lb-loader-ring" />
+//           <p className="lb-loading-text">Loading</p>
+//         </div>
+//       ) : (
+//         <div className="lb-page-wrapper">
+//           <div className="lb-column">
+
+//             {/* Main card */}
+//             <div className="lb-card">
+//               <img src="/LetterBee.png" alt="LetterBee" className="lb-logo" />
+
+//               {signIn ? (
+//                 /* ── Sign In form ── */
+//                 <div style={{ width: '100%' }}>
+//                   {/* Username / email */}
+//                   <div className="lb-field-wrap">
+//                     <input
+//                       type="text"
+//                       placeholder="Username or email"
+//                       value={email || userName}
+//                       onChange={(e) => {
+
+//                         const value = e.target.value;
+
+//                         const isEmail =
+//                           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+//                         if (isEmail) {
+//                           setEmail(value);
+//                           setuserName("");
+//                         } else {
+//                           setuserName(value);
+//                           setEmail("");
+//                         }
+//                       }}
+//                       required
+//                       className="lb-input"
+//                     />
+//                   </div>
+
+//                   {/* Password */}
+//                   <div className="lb-pw-wrap">
+//                     <input
+//                       type={showPassword ? "text" : "password"}
+//                       placeholder="Password"
+//                       value={password}
+//                       onChange={(e) => setPassword(e.target.value)}
+//                       required
+//                       className="lb-input"
+//                     />
+//                     <button
+//                       className="lb-eye-btn"
+//                       onClick={() => setShowPassword(!showPassword)}
+//                       type="button"
+//                     >
+//                       {showPassword ? <FaEyeSlash /> : <FaEye />}
+//                     </button>
+//                   </div>
+
+//                   <button onClick={handleLogin} className="lb-btn-primary">
+//                     Sign in
+//                   </button>
+
+//                   <div className="lb-forgot" onClick={forgetPassword}>
+//                     Forgot password?
+//                   </div>
+//                 </div>
+//               ) : (
+//                 /* ── OTP / reset flow ── */
+//                 <div style={{ width: '100%' }}>
+//                   {otpVerified && (
+//                     <>
+//                       <div className="lb-field-wrap">
+//                         <input
+//                           type="number"
+//                           value={otp}
+//                           onChange={(e) => setOtp(e.target.value)}
+//                           placeholder="Enter your OTP"
+//                           className="lb-input"
+//                           style={{ fontSize: '20px', letterSpacing: '0.25em' }}
+//                         />
+//                       </div>
+//                       <button onClick={verify} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+//                         Verify OTP
+//                       </button>
+//                     </>
+//                   )}
+
+//                   {createPassword && (
+//                     <>
+//                       <div className="lb-pw-wrap">
+//                         <input
+//                           type={showPassword ? "text" : "password"}
+//                           placeholder="New password"
+//                           value={password}
+//                           onChange={(e) => setPassword(e.target.value)}
+//                           required
+//                           className="lb-input"
+//                         />
+//                         <button
+//                           className="lb-eye-btn"
+//                           onClick={() => setShowPassword(!showPassword)}
+//                           type="button"
+//                         >
+//                           {showPassword ? <FaEyeSlash /> : <FaEye />}
+//                         </button>
+//                       </div>
+//                       <button onClick={passwordMaking} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+//                         Set Password
+//                       </button>
+//                     </>
+//                   )}
+
+//                   {changePassword && (
+//                     <>
+//                       <div className="lb-field-wrap">
+//                         <input
+//                           type="text"
+//                           placeholder="Enter your email"
+//                           value={email}
+//                           onChange={(e) => setEmail(e.target.value)}
+//                           required
+//                           className="lb-input"
+//                         />
+//                       </div>
+//                       <button onClick={sendOTP} className="lb-btn-primary" style={{ marginBottom: '16px' }}>
+//                         Send OTP
+//                       </button>
+//                     </>
+//                   )}
+//                 </div>
+//               )}
+//             </div>
+
+//             {/* Footer */}
+//             <div className="lb-footer-card">
+//               Don't have an account?{' '}
+//               <span className="lb-link" onClick={() => navigate("/sign_up")}>Sign up</span>
+//             </div>
+
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Error Modal */}
+//       {errorMessage && (
+//         <div className="lb-modal-backdrop">
+//           <div className="lb-modal-box">
+//             <div className="lb-modal-icon">⚠️</div>
+//             <h2 className="lb-modal-title">Something went wrong</h2>
+//             <p className="lb-modal-msg">{errorMessage}</p>
+//             <button className="lb-modal-btn" onClick={onClose}>Got it</button>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   </>
+// );

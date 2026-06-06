@@ -45,8 +45,6 @@ const Search = () => {
           withCredentials: true
         }
         );
-        console.log("Res", response);
-
         if (response.data) {
           const updatedData = response.data.map((data) => ({
             ...data,
@@ -56,7 +54,8 @@ const Search = () => {
             },
           }));
           setRecentUsers(updatedData);
-          console.log("Data", updatedData);
+          console.log("UDAtas",updatedData);
+          
         }
       } catch (error) {
         console.error("Error fetching recent chats:", error);

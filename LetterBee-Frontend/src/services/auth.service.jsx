@@ -17,7 +17,8 @@ export const loginUser = async (credentials, dispatch) => {
 };
 
 // Logout the user
-export const logoutUser = async (dispatch) => {
+export const logoutUser = async (dispatch) => {console.log("swork");
+
   const { data } = await authAPI.logout();
   dispatch(clearUser());
   return data;
