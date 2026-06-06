@@ -1,2 +1,4 @@
 LetterBee-Frontend/.env
 LetterBee-Backend/.env
+LetterBee-Frontend/node_modules
+LetterBee-Backend/node_modules
