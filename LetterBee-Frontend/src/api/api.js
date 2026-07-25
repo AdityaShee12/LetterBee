@@ -5,15 +5,17 @@ import { store } from "../app/store";
 // BASE CONFIG
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "https://letterbee-backend.onrender.com";
+    "http://localhost:8000";
 
+// Built-in custom method which use for set Base url, withcredentials, headers etc.
 const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     timeout: 15000,
 });
 
-// REQUEST INTERCEPTOR
+// Between transfer request from component of Frontend to Backend request comes here. It's the middle positon 
+// between frontend and Backend
 api.interceptors.request.use(
     (config) => {
         const state = store.getState();
@@ -40,6 +42,7 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -108,50 +111,50 @@ api.interceptors.response.use(
             }
             originalRequest._retry = true;
             isRefreshing = true;
-            // try {
-            //     const response =
-            //         await axios.post(
-            //             `${API_URL}/auth/refreshAccessToken`,
-            //             {},
-            //             {
-            //                 withCredentials: true,
-            //             }
-            //         );
-            //     const newAccessToken =
-            //         response.data?.data?.accessToken;
-            //     store.dispatch(
-            //         setAccessToken(
-            //             newAccessToken
-            //         )
-            //     );
-            //     processQueue(
-            //         null,
-            //         newAccessToken
-            //     );
-            //     originalRequest.headers.Authorization =
-            //         `Bearer ${newAccessToken}`;
-            //     return api(originalRequest);
-            // } catch (refreshError) {
-            //     console.error(
-            //         "❌ Refresh Token Failed:",
-            //         refreshError
-            //     );
-            //     processQueue(
-            //         refreshError,
-            //         null
-            //     );
-            //     store.dispatch(logout());
-            //     toast.error(
-            //         "Session expired. Please login again."
-            //     );
-            //     window.location.href =
-            //         "/login";
-            //     return Promise.reject(
-            //         refreshError
-            //     );
-            // } finally {
-            //     isRefreshing = false;
-            // }
+            try {
+                const response =
+                    await axios.post(
+                        `${API_URL}/auth/refreshAccessToken`,
+                        {},
+                        {
+                            withCredentials: true,
+                        }
+                    );
+                const newAccessToken =
+                    response.data?.data?.accessToken;
+                store.dispatch(
+                    setAccessToken(
+                        newAccessToken
+                    )
+                );
+                processQueue(
+                    null,
+                    newAccessToken
+                );
+                originalRequest.headers.Authorization =
+                    `Bearer ${newAccessToken}`;
+                return api(originalRequest);
+            } catch (refreshError) {
+                console.error(
+                    "❌ Refresh Token Failed:",
+                    refreshError
+                );
+                processQueue(
+                    refreshError,
+                    null
+                );
+                store.dispatch(logout());
+                toast.error(
+                    "Session expired. Please login again."
+                );
+                window.location.href =
+                    "/login";
+                return Promise.reject(
+                    refreshError
+                );
+            } finally {
+                isRefreshing = false;
+            }
         }
         if (!error.response) {
             toast.error(
