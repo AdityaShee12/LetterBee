@@ -65,13 +65,46 @@ io.on("connection", (socket) => {
       });
 
       if (relation) {
-
-        console.log("1");
         socket.emit("relation-status", { status: relation.status, sender: relation.sender.id });
       } else {
-
-        console.log("2");
         socket.emit("relation-status", { status: "unknown" });
+      }
+
+      if (relation.status === "accepted") {
+
+        const messages = await Message.find({
+          $or: [
+            {
+              sender: senderId,
+              receiver: receiverId
+            },
+            {
+              sender: receiverId,
+              receiver: senderId
+            }
+          ]
+        }).sort({ createdAt: 1 });
+
+        for (const message of messages) {
+
+          socket.emit("storedSms", {
+            sender: {
+              id: message.sender.toString()
+            },
+
+            receiver: {
+              id: message.receiver.toString()
+            },
+
+            identifier: message.identifier,
+
+            text: message.textSms,
+
+            file: message.file?.length
+              ? message.file[0]
+              : null
+          });
+        }
       }
     } catch (error) {
       console.error("Socket Error:", error);

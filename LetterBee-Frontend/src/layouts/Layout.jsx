@@ -8,15 +8,10 @@ import { useNavigate, Outlet, useNavigationType } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import axios from "axios";
 import ChatSidebar from "../components/chat/ChatSidebar.jsx";
-// import StatusUpload from "../services/status.service.jsx";
 import GroupSearch from "../services/groupSearch.service.jsx";
 import Notification from "../services/notification.service.jsx";
-// import { setUserAvatar, setUserAbout, clearUser } from "../features/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import { BACKEND_API } from "../api/Backend_API.js";
-// import { clearChatAction, clearStatusAction } from "../features/layoutSlice.js";
-// import { refreshAccessToken, logoutUser } from "../services/user.service.jsx";
 import socket from "../sockets/socket.js";
 import { logoutUser } from "../services/auth.service.jsx";
 import { changeProfilePic, changeProfileAbout } from "../services/user.service.jsx";
@@ -369,7 +364,11 @@ const Layout = () => {
                                             color: state === "groupMessage" ? '#3D4DB7' : '#9090a8',
                                             background: state === "groupMessage" ? 'rgba(61,77,183,0.08)' : 'transparent',
                                         }}
-                                        onClick={() => group()}>
+                                        // onClick={() => group()}
+                                        onClick={() => {
+                                            alert("Group messaging feature is coming soon!");
+                                            setState("message");
+                                        }} >
                                         {state === "groupMessage" ? (
                                             <MdGroup size={24} />
                                         ) : (
@@ -383,7 +382,11 @@ const Layout = () => {
                                             color: state === "status" ? '#3D4DB7' : '#9090a8',
                                             background: state === "status" ? 'rgba(61,77,183,0.08)' : 'transparent',
                                         }}
-                                        onClick={statusUpload}>
+                                        // onClick={statusUpload}
+                                        onClick={() => {
+                                            alert("Status uploading feature is coming soon!");
+                                            setState("message");
+                                        }}>
                                         {state === "status" ? (
                                             <FaCirclePlay size={24} />
                                         ) : (
@@ -396,6 +399,10 @@ const Layout = () => {
                                         style={{
                                             color: state === "notification" ? '#3D4DB7' : '#9090a8',
                                             background: state === "notification" ? 'rgba(61,77,183,0.08)' : 'transparent',
+                                        }}
+                                        onClick={() => {
+                                            alert("Notification feature is coming soon!");
+                                            setState("message");
                                         }}>
                                         {state === "notification" ? (
                                             <AiFillNotification size={24} />

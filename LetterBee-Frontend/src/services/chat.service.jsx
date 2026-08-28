@@ -152,10 +152,11 @@ const ChatService = () => {
     socket.on("receive message", (data) => {
 
       const { identifier, fileName, fileType, buf, sms } = data;
-      let message =
-        typeof sms === "string" && !sms.startsWith("http")
-          ? decryptMessage(sms)
-          : sms;
+      // let message =
+      //   typeof sms === "string" && !sms.startsWith("http")
+      //     ? decryptMessage(sms)
+      //     : sms;
+      let message = sms;
       let uint8Array;
       let blob;
       let fileURL;
@@ -184,10 +185,11 @@ const ChatService = () => {
       const { senderId, identifier, fileName, fileType, fileData, sms } = data;
 
       // message decrypt
-      const message =
-        typeof sms === "string" && !sms.startsWith("http")
-          ? decryptMessage(sms)
-          : sms;
+      // const message =
+      //   typeof sms === "string" && !sms.startsWith("http")
+      //     ? decryptMessage(sms)
+      //     : sms;
+      const message = sms;
 
       if (file?.fileData && file?.fileType) {
         fileURL = `data:${file.fileType};base64,${file.fileData}`;
@@ -234,52 +236,85 @@ const ChatService = () => {
     socket.on("requestSender", (data) => {
       if (data) {
         setRequestSender("receiver");
-
       }
     }
     );
 
     socket.on("storedSms", (data) => {
-      const { sender, identifier, file, text } = data;
-      let message =
-        typeof text === "string" && !text.startsWith("http")
-          ? decryptMessage(text)
-          : text;
+
+      const {
+        sender,
+        identifier,
+        file,
+        text
+      } = data;
+
+      // -------------------------
+      // TEXT MESSAGE
+      // -------------------------
+
+      let message = text;
+
+      if (
+        typeof text === "string" &&
+        !text.startsWith("http")
+      ) {
+        // message = decryptMessage(text);
+        message = text;
+      }
+
+
+      // -------------------------
+      // FILE
+      // -------------------------
+
       let fileURL = null;
       let fileName = null;
       let fileType = null;
-      if (file && file.fileData && file.fileType) {
-        // For images, videos, pdf, etc.
-        fileURL = `data:${file.fileType};base64,${file.fileData}`;
+
+      if (
+        file &&
+        file.fileData &&
+        file.fileType
+      ) {
+
+        fileURL =
+          `data:${file.fileType};base64,${file.fileData}`;
+
         fileName = file.fileName || null;
         fileType = file.fileType || null;
       }
-      if (sender.id === senderId) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "You",
-            identifier,
-            message,
-            fileName,
-            fileType,
-            fileURL,
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender: "Receiver",
-            identifier,
-            message,
-            fileName,
-            fileType,
-            fileURL,
-          },
-        ]);
-      }
-    })
+
+      // -------------------------
+      // SENDER CHECK
+      // -------------------------
+
+      const messageSender =
+        sender?.id === senderId
+          ? "You"
+          : "Receiver";
+
+      // -------------------------
+      // STORE IN FRONTEND
+      // -------------------------
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: messageSender,
+
+          identifier,
+
+          message,
+
+          fileName,
+
+          fileType,
+
+          fileURL
+        }
+      ]);
+    });
 
     return () => {
       socket.off("state");
@@ -785,7 +820,7 @@ const ChatService = () => {
   // Sending Message
   const sendMessage = async () => {
     if (!message.trim() && !file) return;
-    const sms = encryptMessage(message);
+    // const sms = encryptMessage(message);
     let fileBuffer;
     let fileType;
     let fileURL;
@@ -807,7 +842,7 @@ const ChatService = () => {
       receiverFullName,
       receiverAvatar,
       identifier,
-      sms,
+      sms: message,
       fileName,
       fileType,
       fileBuffer,

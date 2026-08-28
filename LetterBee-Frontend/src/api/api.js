@@ -3,9 +3,13 @@ import toast from "react-hot-toast";
 import { store } from "../app/store";
 
 // BASE CONFIG
+// const API_URL =
+//     import.meta.env.VITE_API_URL ||
+//     "https://letterbee-backend.onrender.com";
+
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "https://letterbee-backend.onrender.com";
+    "http://localhost:8000";
 
 // Built-in custom method which use for set Base url, withcredentials, headers etc.
 const api = axios.create({
