@@ -1,5 +1,7 @@
 import { asyncHandler } from "../../utils/handlers/asyncHandler.js";
 import { User } from "../../models/user/user.model.js"
+import { FriendRequest } from "../../models/friendRequest/friendRequest.model.js"
+import mongoose from "mongoose";
 import { Message } from "../../models/chat/message.model.js";
 import { ApiResponse } from "../../utils/response/ApiResponse.js";
 
@@ -102,7 +104,87 @@ const searchUser = asyncHandler(async (req, res) => {
   }
 });
 
+const searchGroupUser = asyncHandler(async (req, res) => {
+  try {
+    const { query, userId } = req.query;
+    console.log("Searched");
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const friends = await FriendRequest.aggregate([
+      // 1. Accepted friendship খুঁজবে
+      {
+        $match: {
+          status: "accepted",
+          $or: [
+            { "sender.id": userObjectId },
+            { "receiver.id": userObjectId }
+          ]
+        }
+      },
+
+      // 2. Current user বাদ দিয়ে opposite user's ID বের করবে
+      {
+        $project: {
+          friendId: {
+            $cond: [
+              {
+                $eq: [
+                  "$sender.id",
+                  userObjectId
+                ]
+              },
+              "$receiver.id",
+              "$sender.id"
+            ]
+          }
+        }
+      },
+
+      // 3. সেই ID দিয়ে User collection-এ search করবে
+      {
+        $lookup: {
+          from: User.collection.name,
+          localField: "friendId",
+          foreignField: "_id",
+          as: "friend"
+        }
+      },
+
+      // 4. Array থেকে object করবে
+      {
+        $unwind: "$friend"
+      },
+
+      // 5. শুধু User document return করবে
+      {
+        $replaceRoot: {
+          newRoot: "$friend"
+        }
+      },
+
+      // 6. Sensitive information বাদ দেবে
+      {
+        $project: {
+          password: 0,
+          refreshToken: 0
+        }
+      }
+    ]);
+
+    console.log("Friends:", friends);
+
+    res.json(friends);
+
+  } catch (error) {
+    console.log("Error", error);
+
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export {
   searchUser,
+  searchGroupUser,
   friends,
 };

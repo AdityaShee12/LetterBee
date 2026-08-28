@@ -5,7 +5,6 @@ import { AiOutlinePhone, AiOutlineVideoCamera } from "react-icons/ai";
 import { FiSend, FiPaperclip, FiX } from "react-icons/fi";
 import { v4 as uuidv4 } from "uuid";
 import { FiCopy, FiTrash2, FiStar } from "react-icons/fi";
-import axios from "axios";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { IoArrowBack } from "react-icons/io5"; // or FaArrowLeft, MdArrowBack etc.
 import { useSelector } from "react-redux";
@@ -21,9 +20,7 @@ const ChatService = () => {
   const [receiverId, setReceiverId] = useState("");
   const [receiverAvatar, setReceiverAvatar] = useState("");
   const [receiverFullName, setReceiverFullName] = useState("");
-  const [receiverUserName, setReceiverUserName] = useState("");
   const [receiverAbout, setReceiverAbout] = useState("");
-  const [receiverEmail, setReceiverEmail] = useState("");
   const [state, setState] = useState("offline");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -67,7 +64,7 @@ const ChatService = () => {
   const [isZoomed, setIsZoomed] = useState(false);
   const zoomcontext = useRef(null);
   const [menuAnimation, setMenuAnimation] = useState(false);
-  const [requestState, setRequestState] = useState("");
+  const [relationStatus, setRelationStatus] = useState("");
   const [participantType, setParticipantType] = useState("sender");
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -77,10 +74,12 @@ const ChatService = () => {
 
   const [senderId, setSenderId] = useState("");
   const [fullName, setFullName] = useState("");
-  const [userName, setUserName] = useState("");
-  const [email, setEmail] = useState();
   const [senderAvatar, setSenderAvatar] = useState("");
-  const [about, setAbout] = useState("");
+  const [email, setEmail] = useState();
+  const [userName, setUserName] = useState();
+  const [about, setAbout] = useState();
+  const [receiverUsername, setReceiverUserName] = useState();
+  const [receiverEmail, setReceiverEmail] = useState();
 
   const { user } = useSelector(
     (state) => state.user,
@@ -90,6 +89,7 @@ const ChatService = () => {
     (state) => state.user,
   );
 
+  // Destructure id, email, userName and assign those data on useState variable
   useEffect(() => {
     const { _id, email, fullName, userName, avatar, about } = user;
     setSenderId(_id);
@@ -100,6 +100,7 @@ const ChatService = () => {
     setAbout(about);
   }, [user]);
 
+  // Destructure id, email, userName and assign those data on useState variable
   useEffect(() => {
     const { _id, email, fullName, userName, avatar, about } = selectUser;
     setReceiverId(_id);
@@ -112,27 +113,35 @@ const ChatService = () => {
 
   // useEffect for select user, onloine-offline, disconnection, previous sms,
   useEffect(() => {
+
     // Select other user from search list
     const recieverFunction = async () => {
       try {
         socket.emit("reciever add", {
           senderId,
           receiverId,
-          receiverFullName,
         });
       } catch (error) {
         console.log("RA Err", error);
       }
     };
+
     recieverFunction();
+
     // Handling state online or offline of other user
-    socket.on("state", (state) => setState(state)
+    socket.on("state", (state) => {
+      console.log("State", state);
+
+      if (state) {
+        setState("online");
+      } else {
+        setState("offline");
+      }
+    }
     );
 
     // Handling disconnection of client
     socket.on("checkDisconnect", (state) => {
-      console.log("Cdisco");
-
       setState(state);
       setTimeout(() => {
         socket.emit("check after reload", { senderId, receiverId });
@@ -141,6 +150,7 @@ const ChatService = () => {
 
     // Handling receive message
     socket.on("receive message", (data) => {
+
       const { identifier, fileName, fileType, buf, sms } = data;
       let message =
         typeof sms === "string" && !sms.startsWith("http")
@@ -223,61 +233,53 @@ const ChatService = () => {
 
     socket.on("requestSender", (data) => {
       if (data) {
-        console.log("Data12");
         setRequestSender("receiver");
-        socket.on("storedSms", (data) => {
-          const { sender, identifier, file, text } = data;
-          console.log("ID", sender.id);
-          let message =
-            typeof text === "string" && !text.startsWith("http")
-              ? decryptMessage(text)
-              : text;
-          let fileURL = null;
-          let fileName = null;
-          let fileType = null;
-          if (file && file.fileData && file.fileType) {
-            // For images, videos, pdf, etc.
-            fileURL = `data:${file.fileType};base64,${file.fileData}`;
-            fileName = file.fileName || null;
-            fileType = file.fileType || null;
-          }
-          if (sender.id === senderId) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                sender: "You",
-                identifier,
-                message,
-                fileName,
-                fileType,
-                fileURL,
-              },
-            ]);
-          } else {
-            setMessages((prev) => [
-              ...prev,
-              {
-                sender: "Receiver",
-                identifier,
-                message,
-                fileName,
-                fileType,
-                fileURL,
-              },
-            ]);
-          }
-        })
+
       }
     }
     );
 
-    // socket.on("requestSender", (data) => {
-    //   console.log("DONG");
-
-    //   if (data) {
-    //     setRequestSender("receiver");
-    //   }
-    // });
+    socket.on("storedSms", (data) => {
+      const { sender, identifier, file, text } = data;
+      let message =
+        typeof text === "string" && !text.startsWith("http")
+          ? decryptMessage(text)
+          : text;
+      let fileURL = null;
+      let fileName = null;
+      let fileType = null;
+      if (file && file.fileData && file.fileType) {
+        // For images, videos, pdf, etc.
+        fileURL = `data:${file.fileType};base64,${file.fileData}`;
+        fileName = file.fileName || null;
+        fileType = file.fileType || null;
+      }
+      if (sender.id === senderId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "You",
+            identifier,
+            message,
+            fileName,
+            fileType,
+            fileURL,
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "Receiver",
+            identifier,
+            message,
+            fileName,
+            fileType,
+            fileURL,
+          },
+        ]);
+      }
+    })
 
     return () => {
       socket.off("state");
@@ -529,7 +531,6 @@ const ChatService = () => {
   };
 
   socket.on("delete", (identifier) => {
-    console.log("DelIdentiF");
     setMessages((prevMessages) =>
       prevMessages.map((msg) =>
         msg.identifier === identifier
@@ -835,101 +836,49 @@ const ChatService = () => {
 
   // Checking friend or not
   useEffect(() => {
-    socket.on("friends", (data) => {
-      const { requestState, participantType } = data;
-      console.log("Friends", requestState, participantType);
 
-      setTimeout(() => {
-        if (requestState === "reject") {
-          setRequestState("reject");
-          if (participantType === "sender") {
-            setParticipantType("receiver");
-          }
-        } else if (requestState === "sent") {
-          setRequestState("sent");
-          if (participantType === "receiver") {
-            setParticipantType("receiver");
-          }
-          console.log(participantType);
-        } else if (requestState === "friend") {
-          setRequestState("friend");
-          if (participantType === "receiver") {
-            setParticipantType("receiver");
-          }
-        } else if (requestState === "noFriend") {
-          console.log("Work");
-          setRequestState("noFriend");
-        }
-      }, 100);
+    socket.on("relation-status", (data) => {
+
+      const { status, sender } = data;
+
+      setRelationStatus(status);
+
+      if (status === "pending" || status === "accepted" || status === "rejected") {
+        setRequestSender(sender);
+      }
     });
+
     return () => {
-      socket.off("friends");
+      socket.off("relation-status");
     };
   }, []);
 
+  const removeRequest = () => {
+
+  }
+
   // Code for sending requests
   const sendRequest = () => {
-    const identifier = uuidv4();
     socket.emit("sendRequest", {
       senderId,
-      userName,
-      senderAvatar,
       receiverId,
-      receiverFullName,
-      receiverAvatar,
     });
-    setRequestState("sent");
+    setRelationStatus("pending");
+    setRequestSender(senderId);
   };
 
   // Code for accept or reject requests
   const replyRequest = (accept) => {
-    const identifier = uuidv4();
+
     socket.emit("acceptRequest", {
       senderId,
-      userName,
-      senderAvatar,
       receiverId,
-      receiverFullName,
-      receiverAvatar,
-      identifier,
-      accept: accept ? 1 : 0, // backend clarity
+      accept: accept ? 1 : 0,
     });
-
     if (accept) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "You",
-          identifier,
-          message: `You accepted ${receiverFullName}'s request`,
-        },
-      ]);
-      setRequestState("friend");
-      console.log("Accept");
-    } else {
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "You",
-          identifier,
-          message: `You rejected friend request of ${receiverFullName}`,
-        },
-      ]);
-      setRequestState("reject");
-      console.log("Reject");
+      setRelationStatus("accepted");
     }
   };
-
-  // Code for accept or reject reply
-  useEffect(() => {
-    socket.on("requestReply", (accept) => {
-      if (accept) {
-        setRequestState("friend");
-      } else {
-        setRequestState("reject");
-      }
-    });
-  }, []);
 
   return (
     <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem] bg-[#f0f1f8] min-h-screen w-full relative z-10">
@@ -1152,11 +1101,11 @@ const ChatService = () => {
             className="lg:max-h-[77vh] max-h-[82.5vh] min-h-[72vh] overflow-y-auto p-4 custom-scrollbar bg-transparent"
           >
             {/* Friend request accepted notice */}
-            {requestState === "friend" && (
+            {relationStatus === "accepted" && (
               <div className="flex justify-center mb-3">
                 <div className="bg-[#eef0fb] border border-[#d6d8ef] text-[#9090a8]
                           text-xs px-4 py-1.5 rounded-full">
-                  {requestSender === "receiver"
+                  {requestSender === senderId
                     ? `${receiverFullName} accepted your friend request.`
                     : `You accepted ${receiverFullName}'s friend request.`}
                 </div>
@@ -1306,7 +1255,7 @@ const ChatService = () => {
 
           {/* ─── Footer States ─── */}
           {/* No friend */}
-          {requestState === "noFriend" && (
+          {relationStatus === "unknown" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="bg-white border border-[#d6d8ef] text-[#9090a8]
                         text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
@@ -1324,13 +1273,30 @@ const ChatService = () => {
           )}
 
           {/* Sent request */}
-          {requestState === "sent" && (
+          {relationStatus === "pending" && (
             <div className="py-4">
-              {participantType === "sender" ? (
+              {requestSender === senderId ? (
                 <div className="flex justify-center">
                   <div className="bg-white border border-[#d6d8ef] text-[#9090a8]
-                            text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-                    You sent a friend request to <span className="text-[#1a1a2e] font-medium">{receiverFullName}</span>.
+                  text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
+                    <div>
+                      You sent a friend request to{" "}
+                      <span className="text-[#1a1a2e] font-medium">
+                        {receiverFullName}
+                      </span>
+                      .
+                    </div>
+
+                    <button
+                      type="button"
+                      className="mt-3 px-4 py-1.5 rounded-lg border border-[#d6d8ef]
+                 bg-[#f8f8fc] text-[#5f6075] text-xs font-medium
+                 hover:bg-[#f1f1f8] hover:text-[#1a1a2e]
+                 active:scale-95 transition-all duration-150"
+                      onClick={() => removeRequest()}
+                    >
+                      Remove Request
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -1361,9 +1327,16 @@ const ChatService = () => {
           )}
 
           {/* Rejected */}
-          {requestState === "reject" && (
+          {relationStatus === "rejected" && (
             <div className="py-4">
-              {participantType === "sender" ? (
+              {"requestSender" === senderId ? (
+                <div className="flex justify-center">
+                  <div className="bg-white border border-[#d6d8ef] text-[#9090a8]
+                            text-sm rounded-xl text-center px-4 py-3">
+                    <span className="text-[#1a1a2e] font-medium">{receiverName}</span> rejected your friend request.
+                  </div>
+                </div>
+              ) : (
                 <div className="flex flex-col items-center gap-3">
                   <div className="bg-white border border-[#d6d8ef] text-[#9090a8]
                             text-sm rounded-xl text-center px-4 py-3">
@@ -1381,19 +1354,12 @@ const ChatService = () => {
                     Send Request
                   </button>
                 </div>
-              ) : (
-                <div className="flex justify-center">
-                  <div className="bg-white border border-[#d6d8ef] text-[#9090a8]
-                            text-sm rounded-xl text-center px-4 py-3">
-                    <span className="text-[#1a1a2e] font-medium">{receiverName}</span> rejected your friend request.
-                  </div>
-                </div>
               )}
             </div>
           )}
 
           {/* ─── Message Input Bar ─── */}
-          {requestState === "friend" && (
+          {relationStatus === "accepted" && (
             <div className="relative flex items-center h-[4rem] gap-2 px-1">
               {file && (
                 <div className="flex items-center gap-2 p-2 bg-white border border-[#d6d8ef]
@@ -1460,530 +1426,3 @@ const ChatService = () => {
 }
 
 export default ChatService;
-
-// return (
-//   <div className="flex flex-col items-center justify-between mt-[0.7rem] pl-[0.9rem] pr-[0.9rem] bg-transparent min-h-screen w-full relative z-10">
-
-//     {/* ─── Header / Profile bar ─── */}
-//     <div
-//       className="flex justify-between items-center w-full rounded-xl h-[4.5rem] cursor-pointer
-//              bg-white/5 border border-white/10 px-3 sticky top-0 z-30
-//              backdrop-blur-xl"
-//       onClick={(e) => openProfileContext(e)}
-//     >
-//       {/* Avatar + Name + Status */}
-//       <div className="flex items-center gap-3">
-//         <div className="relative">
-//           <img
-//             src={receiverAvatar}
-//             alt=""
-//             className="w-11 h-11 rounded-full object-cover border border-white/10"
-//           />
-//           <span
-//             className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0d0d0f]
-//           ${state === "Online" ? "bg-emerald-400" : "bg-white/30"}`}
-//           />
-//         </div>
-
-//         <div className="flex flex-col justify-center">
-//           <h2 className="text-[0.95rem] font-semibold leading-tight text-slate-100">
-//             {receiverFullName}
-//           </h2>
-//           <p className={`text-xs flex items-center gap-1 font-medium
-//         ${state === "Online" ? "text-emerald-400" : "text-slate-500"}`}>
-//             <span className={`inline-block w-1.5 h-1.5 rounded-full
-//           ${state === "Online" ? "bg-emerald-400" : "bg-slate-500"}`} />
-//             {state === "Online" ? "Online" : `${state}`}
-//           </p>
-//         </div>
-//       </div>
-
-//       <div
-//         className="w-9 h-9 flex items-center justify-center rounded-xl
-//                bg-white/10 border border-white/10 text-white/60
-//                hover:text-white hover:bg-white/20 transition-colors"
-//         onClick={(e) => {
-//           e.stopPropagation();
-//           alert("Video call feature will be available within one week");
-//         }}
-//       >
-//         <AiOutlineVideoCamera size={20} />
-//       </div>
-//     </div>
-
-//     {/* ─── Profile Details Panel ─── */}
-//     {profileDetails && (
-//       <div
-//         ref={profileRef}
-//         className="absolute z-10 w-[30rem] h-[29rem] shadow-2xl mt-[4rem]
-//                rounded-2xl overflow-hidden border border-slate-700"
-//       >
-//         <div className="flex h-full">
-//           {/* Left sidebar */}
-//           <div className="flex flex-col pt-4 pl-4 gap-3 bg-slate-900 w-[8rem] border-r border-slate-700">
-//             {[
-//               { label: "Overview", fn: overview },
-//               { label: "Media", fn: media },
-//               { label: "Links", fn: files },
-//               { label: "Files", fn: links },
-//               { label: "Groups", fn: groups },
-//             ].map(({ label, fn }) => (
-//               <div
-//                 key={label}
-//                 onClick={(e) => fn(e)}
-//                 className="cursor-pointer text-sm text-slate-400 hover:text-orange-400
-//                        px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors"
-//               >
-//                 {label}
-//               </div>
-//             ))}
-//           </div>
-
-//           {/* Right content */}
-//           <div className="bg-slate-950 flex-1 overflow-y-auto">
-//             {activeSection === "profile" && (
-//               <div>
-//                 <div className="flex flex-col items-center p-4 rounded-lg overflow-hidden">
-//                   {/* Profile Picture */}
-//                   <div className={`${isZoomed
-//                     ? "fixed bg-black flex justify-center items-center inset-0 z-50"
-//                     : "relative w-28 h-28"}`}
-//                   >
-//                     <div
-//                       className={`${isZoomed ? "absolute z-50 left-7 top-7 text-white" : "hidden"}`}
-//                       onClick={() => setIsZoomed(false)}
-//                     >
-//                       <IoArrowBack size={24} className="cursor-pointer" />
-//                     </div>
-
-//                     {isZoomed ? (
-//                       <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }} doubleClick={{ disabled: true }}>
-//                         <TransformComponent>
-//                           <img src={receiverAvatar} alt="profile" className="w-[48vw] h-[95vh]" />
-//                         </TransformComponent>
-//                       </TransformWrapper>
-//                     ) : (
-//                       <img
-//                         src={receiverAvatar}
-//                         alt=""
-//                         onClick={() => setIsZoomed(true)}
-//                         className="absolute w-28 h-28 rounded-full cursor-pointer
-//                                ring-2 ring-orange-500/40 object-cover"
-//                       />
-//                     )}
-//                   </div>
-
-//                   {/* Name + status badge */}
-//                   <div className="flex items-center gap-2 mt-4">
-//                     <h2 className="text-xl font-bold text-slate-100">{receiverFullName}</h2>
-//                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-//                   ${state === "Online"
-//                         ? "bg-emerald-500/20 text-emerald-400"
-//                         : "bg-slate-700 text-slate-400"}`}>
-//                       {state === "Online" ? "● Online" : "● Offline"}
-//                     </span>
-//                   </div>
-
-//                   {/* Action buttons */}
-//                   <div className="flex justify-center gap-4 py-5 w-full">
-//                     <div
-//                       className="flex flex-col items-center justify-center gap-1 cursor-pointer
-//                              bg-slate-800 border border-slate-700 rounded-xl w-[7rem] h-[4.5rem]
-//                              hover:border-orange-500/40 hover:text-orange-400 transition-colors text-slate-400"
-//                       onClick={videoCallSystem}
-//                     >
-//                       <AiOutlineVideoCamera size={22} />
-//                       <p className="text-xs">Video</p>
-//                     </div>
-//                     <div
-//                       className="flex flex-col items-center justify-center gap-1 cursor-pointer
-//                              bg-slate-800 border border-slate-700 rounded-xl w-[7rem] h-[4.5rem]
-//                              hover:border-orange-500/40 hover:text-orange-400 transition-colors text-slate-400"
-//                       onClick={videoCallSystem}
-//                     >
-//                       <AiOutlinePhone size={22} className="rotate-90" />
-//                       <p className="text-xs">Audio</p>
-//                     </div>
-//                   </div>
-//                 </div>
-
-//                 {/* About */}
-//                 <div className="px-4 mb-4">
-//                   <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1">About</p>
-//                   <p className="text-sm text-slate-300">{receiverAbout}</p>
-//                 </div>
-
-//                 {/* Phone */}
-//                 <div className="px-4 mb-4">
-//                   <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1">Phone number</p>
-//                   <p className="text-sm text-slate-300">{phoneNumber}</p>
-//                 </div>
-
-//                 {/* Block / Report */}
-//                 <div className="flex justify-between px-4 gap-3 mb-4">
-//                   <button className="flex-1 py-2 text-sm rounded-xl bg-slate-800 border border-slate-700
-//                                  text-slate-400 hover:border-red-500/40 hover:text-red-400 transition-colors">
-//                     Block
-//                   </button>
-//                   <button className="flex-1 py-2 text-sm rounded-xl bg-slate-800 border border-slate-700
-//                                  text-slate-400 hover:border-orange-500/40 hover:text-orange-400 transition-colors">
-//                     Report contact
-//                   </button>
-//                 </div>
-//               </div>
-//             )}
-//             {activeSection === "media" && <MediaComponent />}
-//             {activeSection === "files" && <FilesComponent />}
-//             {activeSection === "links" && <LinksComponent />}
-//             {activeSection === "groups" && <GroupsComponent />}
-//           </div>
-//         </div>
-//       </div>
-//     )}
-
-//     {/* ─── Video Call System ─── */}
-//     {isVideo && (
-//       <div
-//         className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center transition-all duration-300
-//       ${isFullScreen ? "w-full h-full" : "w-[300px] h-[300px] rounded-2xl overflow-hidden"}`}
-//         onClick={() => setIsFullScreen(!isFullScreen)}
-//         onMouseDown={handleMouseDown}
-//         onMouseUp={handleMouseUp}
-//         onTouchStart={handleMouseDown}
-//         onTouchEnd={handleMouseUp}
-//       >
-//         <video
-//           ref={isSwapped ? localVideoRef : remoteVideoRef}
-//           autoPlay muted={isSwapped} playsInline
-//           className="absolute inset-0 w-full h-full object-cover"
-//         />
-//         <div
-//           ref={dragRef}
-//           className="absolute w-[120px] h-[120px] border-2 border-orange-500/60 rounded-xl overflow-hidden cursor-move"
-//           style={{ top: localVideoPos.y, left: localVideoPos.x }}
-//           onMouseDown={startDrag}
-//           onTouchStart={startDrag}
-//         >
-//           <video
-//             ref={isSwapped ? remoteVideoRef : localVideoRef}
-//             autoPlay muted={!isSwapped} playsInline
-//             className="w-full h-full object-cover"
-//           />
-//         </div>
-//       </div>
-//     )}
-
-//     {/* ─── Message Section ─── */}
-//     <div className="w-full bg-cover bg-center flex-1">
-//       <div className="flex flex-col w-full">
-
-//         {/* Chat messages */}
-//         <div
-//           ref={chatContainerRef}
-//           className="lg:max-h-[77vh] max-h-[82.5vh] min-h-[72vh] overflow-y-auto p-4 custom-scrollbar bg-transparent"
-//         >
-//           {/* Friend request accepted notice */}
-//           {requestState === "friend" && (
-//             <div className="flex justify-center mb-3">
-//               <div className="bg-slate-800/80 border border-slate-700 text-slate-400
-//                           text-xs px-4 py-1.5 rounded-full backdrop-blur-sm">
-//                 {requestSender === "receiver"
-//                   ? `${receiverFullName} accepted your friend request.`
-//                   : `You accepted ${receiverFullName}'s friend request.`}
-//               </div>
-//             </div>
-//           )}
-
-//           {messages.map((msg, index) => (
-//             <div
-//               key={index}
-//               className={`flex w-full mb-[0.5rem] ${msg.sender === "You" ? "justify-end" : "justify-start"}`}
-//             >
-//               <div
-//                 className={`relative flex flex-col ${msg.sender === "You" ? "items-end" : "items-start"}`}
-//                 onContextMenu={(e) => openContextMenu(msg, e)}
-//                 style={{ width: "fit-content", maxWidth: "60%" }}
-//               >
-//                 {msg.fileURL ? (
-//                   msg.fileType?.startsWith("image/") ? (
-//                     <img
-//                       src={msg.fileURL}
-//                       alt="Sent Image"
-//                       className="w-40 h-40 object-cover rounded-xl cursor-pointer ring-1 ring-slate-700"
-//                       onClick={() => setSelectedImage(msg.fileURL)}
-//                     />
-//                   ) : msg.fileType?.startsWith("video/") ? (
-//                     <video src={msg.fileURL} controls className="w-60 rounded-xl" />
-//                   ) : (
-//                     <a
-//                       href={msg.fileURL}
-//                       target="_blank"
-//                       rel="noopener noreferrer"
-//                       className="bg-slate-800 border border-slate-700 text-slate-200
-//                              px-3 py-2 rounded-xl min-w-[80px] max-w-full break-words block
-//                              hover:border-orange-500/40 transition-colors"
-//                     >
-//                       📄 {msg.fileName}
-//                     </a>
-//                   )
-//                 ) : null}
-
-//                 {msg.message && (
-//                   <div
-//                     className={`text-[0.95rem] px-4 py-2 min-w-[80px] shadow-sm backdrop-blur-md
-//                             max-w-full break-words whitespace-pre-line mt-1 block
-//                   ${msg.sender === "You"
-//                         ? "bg-gradient-to-br from-[#4337e6] to-[#6d28d9] text-white rounded-2xl rounded-tr-sm shadow-[#4337e6]/20"
-//                         : "bg-white/10 border border-white/5 text-white/90 rounded-2xl rounded-tl-sm"}`}
-//                     style={{ wordBreak: "break-word", whiteSpace: "pre-line" }}
-//                   >
-//                     {msg.message}
-//                   </div>
-//                 )}
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-
-//         {/* ─── Context Menu ─── */}
-//         {contextMenu.show && (
-//           <div
-//             ref={contextRef}
-//             className="absolute z-10 min-w-[11rem] bg-slate-800 border border-slate-700
-//                    rounded-2xl p-2 shadow-2xl"
-//             style={{ left: contextMenu.x, top: contextMenu.y }}
-//           >
-//             <div
-//               className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                      flex items-center gap-2 text-sm text-slate-200 transition-colors"
-//               onClick={copyFunction}
-//             >
-//               <FiCopy size={15} /> Copy
-//             </div>
-//             <div className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                         flex items-center gap-2 text-sm text-slate-200 transition-colors">
-//               <FiStar size={15} /> Star
-//             </div>
-//             <div className="h-px bg-slate-700 my-1" />
-//             <div
-//               className="cursor-pointer px-3 py-2 rounded-xl hover:bg-slate-700
-//                      flex items-center gap-2 text-sm text-red-400 transition-colors"
-//               onClick={deleteFunction}
-//             >
-//               <FiTrash2 size={15} /> Delete
-//             </div>
-//           </div>
-//         )}
-
-//         {/* ─── Delete Confirmation ─── */}
-//         {delFunc && (
-//           <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
-//             <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-72 shadow-2xl text-center">
-//               <div className="w-10 h-10 rounded-full bg-red-500/15 border border-red-500/30
-//                           flex items-center justify-center mx-auto mb-3">
-//                 <FiTrash2 size={18} className="text-red-400" />
-//               </div>
-//               <p className="text-slate-200 font-medium mb-4">Delete this message?</p>
-//               {everyone ? (
-//                 <>
-//                   <button
-//                     className="w-full py-2.5 mb-2 text-sm text-red-400 rounded-xl
-//                            bg-slate-800 border border-slate-700 hover:border-red-500/40 transition-colors"
-//                     onClick={() => Delete("You")}
-//                   >
-//                     Delete for everyone
-//                   </button>
-//                   <button
-//                     className="w-full py-2.5 mb-2 text-sm text-slate-300 rounded-xl
-//                            bg-slate-800 border border-slate-700 hover:border-slate-500 transition-colors"
-//                     onClick={() => Delete("Me")}
-//                   >
-//                     Delete for me
-//                   </button>
-//                 </>
-//               ) : (
-//                 <button
-//                   className="w-full py-2.5 mb-2 text-sm text-slate-300 rounded-xl
-//                          bg-slate-800 border border-slate-700 hover:border-slate-500 transition-colors"
-//                   onClick={() => Delete("Me1")}
-//                 >
-//                   Delete for me
-//                 </button>
-//               )}
-//               <button
-//                 className="w-full py-2.5 text-sm text-slate-500 rounded-xl
-//                        hover:bg-slate-800 transition-colors"
-//                 onClick={() => setDelFunc(false)}
-//               >
-//                 Cancel
-//               </button>
-//             </div>
-//           </div>
-//         )}
-
-//         {/* ─── Full Image Preview ─── */}
-//         {selectedImage && (
-//           <div
-//             className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50"
-//             onClick={() => setSelectedImage(null)}
-//           >
-//             <TransformWrapper initialScale={1} wheel={{ step: 0.1 }} pinch={{ step: 5 }} doubleClick={{ disabled: true }}>
-//               <TransformComponent>
-//                 <img src={selectedImage} alt="Full Size" className="max-w-full max-h-full rounded-xl" />
-//               </TransformComponent>
-//             </TransformWrapper>
-//           </div>
-//         )}
-
-//         {/* ─── Footer States ─── */}
-//         {/* No friend */}
-//         {requestState === "noFriend" && (
-//           <div className="flex flex-col items-center gap-3 py-4">
-//             <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                         text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//               If you want to chat with <span className="text-slate-200 font-medium">{receiverFullName}</span>,
-//               you need to send a friend request first.
-//             </div>
-//             <button
-//               onClick={sendRequest}
-//               className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                      text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//             >
-//               Send Request
-//             </button>
-//           </div>
-//         )}
-
-//         {/* Sent request */}
-//         {requestState === "sent" && (
-//           <div className="py-4">
-//             {participantType === "sender" ? (
-//               <div className="flex justify-center">
-//                 <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//                   You sent a friend request to <span className="text-slate-200 font-medium">{receiverFullName}</span>.
-//                 </div>
-//               </div>
-//             ) : (
-//               <div className="flex flex-col items-center gap-3">
-//                 <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm max-w-[33rem] rounded-xl text-center px-4 py-3">
-//                   <span className="text-slate-200 font-medium">{receiverFullName}</span> sent you a friend request.
-//                 </div>
-//                 <div className="flex gap-4">
-//                   <button
-//                     onClick={() => replyRequest(1)}
-//                     className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                            text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//                   >
-//                     Accept
-//                   </button>
-//                   <button
-//                     onClick={() => replyRequest(0)}
-//                     className="bg-slate-800 border border-slate-700 hover:border-red-500/40
-//                            text-red-400 font-semibold text-sm h-10 px-6 rounded-xl transition-colors"
-//                   >
-//                     Reject
-//                   </button>
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-//         )}
-
-//         {/* Rejected */}
-//         {requestState === "reject" && (
-//           <div className="py-4">
-//             {participantType === "sender" ? (
-//               <div className="flex flex-col items-center gap-3">
-//                 <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm rounded-xl text-center px-4 py-3">
-//                   You rejected <span className="text-slate-200 font-medium">{receiverName}</span>'s friend request.
-//                 </div>
-//                 <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm rounded-xl text-center px-4 py-3">
-//                   Send a new request to start chatting.
-//                 </div>
-//                 <button
-//                   onClick={sendRequest}
-//                   className="bg-orange-500 hover:bg-orange-600 active:scale-95
-//                          text-white font-semibold text-sm h-10 px-6 rounded-xl transition-all duration-200"
-//                 >
-//                   Send Request
-//                 </button>
-//               </div>
-//             ) : (
-//               <div className="flex justify-center">
-//                 <div className="bg-slate-800 border border-slate-700 text-slate-400
-//                             text-sm rounded-xl text-center px-4 py-3">
-//                   <span className="text-slate-200 font-medium">{receiverName}</span> rejected your friend request.
-//                 </div>
-//               </div>
-//             )}
-//           </div>
-//         )}
-
-//         {/* ─── Message Input Bar ─── */}
-//         {requestState === "friend" && (
-//           <div className="relative flex items-center h-[4rem] gap-2 px-1">
-//             {file && (
-//               <div className="flex items-center gap-2 p-2 bg-white/10 border border-white/10 backdrop-blur-md
-//                           rounded-xl mb-2 absolute bottom-16 left-0">
-//                 <img src={filePreview} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />
-//                 <span className="truncate text-sm text-white max-w-[8rem]">{file.name}</span>
-//                 <button onClick={() => { setFile(null); setFilePreview(null); }}>
-//                   <FiX size={18} className="text-white/50 hover:text-white transition-colors" />
-//                 </button>
-//               </div>
-//             )}
-
-//             <button
-//               onClick={() => fileInputRef.current?.click()}
-//               className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0
-//                      bg-white/10 border border-white/10 text-white/60
-//                      hover:text-white hover:bg-white/20 transition-colors"
-//             >
-//               <FiPaperclip size={18} />
-//             </button>
-
-//             <input
-//               type="file"
-//               accept="image/*"
-//               capture="environment"
-//               ref={fileInputRef}
-//               className="hidden"
-//               onChange={handleFileChange}
-//             />
-
-//             <textarea
-//               ref={messageInputRef}
-//               value={message}
-//               onChange={handleChange}
-//               placeholder="Type a message…"
-//               className="flex-1 bg-white/5 border border-white/10 text-white
-//                      placeholder-white/30 rounded-xl px-4 py-3 text-[0.95rem] resize-none
-//                      outline-none focus:bg-[#4337e6]/10 focus:border-[#4337e6]/50 transition-all leading-normal"
-//               rows={1}
-//               style={{ minHeight: "42px", maxHeight: "120px" }}
-//               onKeyDown={(e) => {
-//                 if (e.key === "Enter" && !e.shiftKey) {
-//                   e.preventDefault();
-//                   sendMessage();
-//                 }
-//               }}
-//             />
-
-//             <button
-//               onClick={sendMessage}
-//               className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0
-//                      bg-gradient-to-br from-[#4337e6] to-[#6d28d9] hover:opacity-90 active:scale-95
-//                      text-white transition-all shadow-lg shadow-[#4337e6]/30"
-//             >
-//               <FiSend size={17} />
-//             </button>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   </div>
-// );

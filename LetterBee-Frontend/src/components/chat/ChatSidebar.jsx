@@ -1,3 +1,9 @@
+// Show users list algorithm
+// First fetched previous stored chat from database then stored in recentUsers variable and show this recentUsers value on searchlist.
+// If users write any query on searchbar, fetched users based on search query on users variable.
+// Then how many users are there in recentUsers compare those users with users of users variable and how many users wil match, will push
+// to index 0 and if any users will not match with recentUsers variable's user, also push to first of array
+
 import { chatAPI, userAPI } from "../../api/api.js";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useNavigationType } from "react-router-dom";
@@ -6,9 +12,7 @@ import { debounce } from "lodash";
 import socket from "../../sockets/socket.js";
 import { AiOutlineSearch } from "react-icons/ai";
 import { setSelectUser } from "../../features/userSlice.js";
-// import { setChatAction } from "../features/layoutSlice.js";
 import { useDispatch, useSelector } from "react-redux";
-// import { BACKEND_API } from "../api/Backend_API.js";
 
 const ChatSidebar = () => {
 
@@ -29,19 +33,9 @@ const ChatSidebar = () => {
     const iv = "abcdef9876543210abcdef9876543210";
     const dispatch = useDispatch();
 
-    useEffect(() => {
-        const { _id, email, fullName, userName, avatar, about } = user;
-        console.log("Console", _id, email, fullName, userName, avatar, about);
-        setUserId(_id);
-        setAvatar(avatar);
-        setFullName(fullName);
-        setEmail(email);
-        setUserName(userName);
-        setAbout(about);
-    }, [user]);
-
+    // Decrypt message after decryption
     function decryptMessage(encryptedText) {
-        if (!encryptedText) return "";  // null/undefined check
+        if (!encryptedText) return "";
         try {
             const bytes = CryptoJS.AES.decrypt(
                 encryptedText,
@@ -53,43 +47,49 @@ const ChatSidebar = () => {
                 }
             );
             const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-            return decrypted || encryptedText; // decrypt fail হলে original text return
+            return decrypted || encryptedText;
         } catch (error) {
             console.error("Decryption failed:", error);
-            return encryptedText; // error হলে original text return
+            return encryptedText;
         }
     }
-    // It is work for make first position of searchable users on userlist
-    const searchRecentChat = () => {
+
+    // After selecting user from userlist
+    const handleSelectUser = (otherUser) => {
+
+        const recieverName = otherUser?.otherUser?.fullName.replace(/\s+/g, "");
+
+        dispatch(setSelectUser(otherUser?.otherUser));
+
+        setTimeout(() => {
+            navigate(`/layout/chat/${recieverName}`);
+        }, 300);
+
+        setQuery("");
+
         setRecentUsers((prevUsers) => {
-            let updatedUsers = [...prevUsers];
-            users.forEach((newUser) => {
-                const index = updatedUsers.findIndex(
-                    (user) => user._id === newUser._id,
-                );
-                if (index !== -1) {
-                    const [matchedUser] = updatedUsers.splice(index, 1);
-                    updatedUsers.unshift(matchedUser);
-                } else {
-                    updatedUsers.unshift(newUser);
-                }
-            });
+            const updatedUsers = prevUsers.filter(
+                (recentUser) => recentUser._id === otherUser._id || recentUser.lastMessage,
+            );
+            // Ensure user is at the top
+            const userIndex = updatedUsers.findIndex((u) => u._id === otherUser._id);
+            if (userIndex !== -1) {
+                const [matchedUser] = updatedUsers.splice(userIndex, 1);
+                updatedUsers.unshift(matchedUser);
+            }
             return updatedUsers;
         });
     };
-    // searchRecentChat code (user transfer to first index for searching)
-    useEffect(() => {
-        searchRecentChat();
-    }, [users]);
+
     // After sending last message userlist update code
     const handleLastMessage = (data) => {
-        const { userId, sms, fileType, fileName, sentRequest, receiveRequest } =
+        const { senderId, sms, fileType, fileName } =
             data;
         const t = decryptMessage(sms);
         setTimeout(() => {
             setRecentUsers((prevUsers) => {
                 let updatedUsers = prevUsers.map((user) =>
-                    user._id === userId
+                    user._id === senderId
                         ? {
                             ...user,
                             lastMessage: {
@@ -111,33 +111,25 @@ const ChatSidebar = () => {
         }, 1000);
     };
 
-    // After sending last message userlist update code
-    useEffect(() => {
-        if (!userId) return;
-        const fetchRecentChats = async () => {
-            setTimeout(async () => {
-                try {
-                    const response = await chatAPI.previousChat(userId);
-                    if (response.data) {
-                        const updatedData = response.data.map((data) => ({
-                            ...data,
-                            lastMessage: {
-                                ...data.lastMessage,
-                                text: decryptMessage(data.lastMessage.text),
-                            },
-                        }));
-                        setRecentUsers(updatedData); console.log("UDATa",updatedData);
-                    }
-                } catch (error) {
-                    console.error("Error fetching recent chats:", error);
+    // It is work for make first position of searchable users on userlist
+    const searchRecentChat = () => {
+        setRecentUsers((prevUsers) => {
+            let updatedUsers = [...prevUsers];
+            users.forEach((newUser) => {
+                const index = updatedUsers.findIndex(
+                    (user) => user._id === newUser._id,
+                );
+                if (index !== -1) {
+                    const [matchedUser] = updatedUsers.splice(index, 1);
+                    updatedUsers.unshift(matchedUser);
+                } else {
+                    updatedUsers.unshift(newUser);
                 }
-            }, 100);
-        };
-        fetchRecentChats();
-        socket.on("last message", handleLastMessage);
-    }, [userId]);
+            });
+            return updatedUsers;
+        });
+    };
 
-    // 2
     // It is fetch users those are matchs with search query
     const fetchUsers = debounce(async (searchText) => {
         if (!searchText.trim() || !userId) {
@@ -146,56 +138,70 @@ const ChatSidebar = () => {
         }
         try {
             const response = await userAPI.searchUser({ searchText, userId });
-            const usersWithUUID = response.data.map((user) => ({
-                ...user,
-            }));
-            setUsers(usersWithUUID);
+
+            console.log("Res", response);
+            setUsers(response.data);
         } catch (error) {
             console.error("Error fetching users:", error);
         }
     }, 300);
+
+    // Destructure data of user and assign those data on variable through useState
+    useEffect(() => {
+        const { _id, email, fullName, userName, avatar, about } = user;
+        setUserId(_id);
+        setAvatar(avatar);
+        setFullName(fullName);
+        setEmail(email);
+        setUserName(userName);
+        setAbout(about);
+    }, [user]);
+
+    // After sending last message userlist update code
+    useEffect(() => {
+        socket.on("last message", handleLastMessage);
+    }, []);
+
+    // searchRecentChat code (user transfer to first index for searching)
+    useEffect(() => {
+        searchRecentChat();
+    }, [users]);
 
     // fetchusers code (show users for typing query)
     useEffect(() => {
         fetchUsers(query);
     }, [query]);
 
+    // Fetching previous stored chat from database
+    useEffect(() => {
+        if (!userId) return;
+        const fetchRecentChats = async () => {
+            setTimeout(async () => {
+                try {
+                    const response = await chatAPI.lastSms(userId);
+                    console.log("Response", response);
+                    if (response.data) {
+                        setRecentUsers(response.data);
+                    }
+                } catch (error) {
+                    console.error("Error fetching recent chats:", error);
+                }
+            }, 100);
+        };
+        fetchRecentChats();
+    }, [userId]);
+
     // This code for show online after online
     useEffect(() => {
         if (socket.connected) {
-            socket.emit("new-user-joined", { senderId: userId, userName });
+            console.log("Userid", userId);
+
+            socket.emit("new-user-joined", { senderId: userId });
         } else {
             socket.connect();
-            socket.emit("new-user-joined", { senderId: userId, userName });
+            socket.emit("new-user-joined", { senderId: userId });
         }
     }, [userId, userName]);
-
-    // After selecting user from userlist
-    const handleSelectUser = (user) => {
-        const recieverName = user.fullName.replace(/\s+/g, "");
-        dispatch(setSelectUser(user));
-        setTimeout(() => {
-            navigate(`/layout/chat/${recieverName}`);
-        }, 300);
-        // dispatch(
-        //   setChatAction({
-        //     chatAction: "chatPage",
-        //   }),
-        // );
-        setQuery("");
-        setRecentUsers((prevUsers) => {
-            const updatedUsers = prevUsers.filter(
-                (recentUser) => recentUser._id === user._id || recentUser.lastMessage,
-            );
-            // Ensure user is at the top
-            const userIndex = updatedUsers.findIndex((u) => u._id === user._id);
-            if (userIndex !== -1) {
-                const [matchedUser] = updatedUsers.splice(userIndex, 1);
-                updatedUsers.unshift(matchedUser);
-            }
-            return updatedUsers;
-        });
-    };
 
     return (
         <div className="font-sans">
@@ -248,11 +254,11 @@ const ChatSidebar = () => {
                 className="px-2 pb-4 overflow-y-auto max-h-[calc(100vh-140px)] flex flex-col gap-0.5"
                 style={{ scrollbarWidth: 'none' }}
             >
-                {recentUsers.map((user) => (
+                {recentUsers.map((otherUser) => (
                     <li
-                        key={user._id}
+                        key={otherUser._id}
                         className="flex gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 relative"
-                        onClick={() => handleSelectUser(user)}
+                        onClick={() => handleSelectUser(otherUser)}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.background = 'rgba(61,77,183,0.07)';
                         }}
@@ -263,8 +269,8 @@ const ChatSidebar = () => {
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
                             <img
-                                src={user.avatar}
-                                alt={user.fullName}
+                                src={otherUser?.otherUser?.avatar}
+                                alt={otherUser?.otherUser?.fullName}
                                 className="w-[44px] h-[44px] rounded-full object-cover"
                                 style={{ border: '2px solid rgba(61,77,183,0.15)' }}
                             />
@@ -274,17 +280,17 @@ const ChatSidebar = () => {
                         <div className="flex flex-col justify-center min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
                                 <p className="font-semibold text-[14px] leading-snug truncate text-[#1a1a2e]">
-                                    {user.fullName}
+                                    {otherUser?.otherUser?.fullName}
                                 </p>
                             </div>
                             <p className="text-[12.5px] truncate mt-0.5 text-[#9090a8]">
-                                {user.lastMessage?.fileType ? (
-                                    user.lastMessage.fileType.startsWith("image/") ? (
+                                {otherUser?.lastMessage?.fileType ? (
+                                    otherUser?.lastMessage?.fileType.startsWith("image/") ? (
                                         <span className="flex items-center gap-1">
                                             <span>📷</span>
                                             <span>Photo</span>
                                         </span>
-                                    ) : user.lastMessage.fileType.startsWith("video/") ? (
+                                    ) : otherUser?.lastMessage?.fileType.startsWith("video/") ? (
                                         <span className="flex items-center gap-1">
                                             <span>🎥</span>
                                             <span>Video</span>
@@ -293,16 +299,16 @@ const ChatSidebar = () => {
                                         <span className="flex items-center gap-1">
                                             <span>📄</span>
                                             <span>
-                                                {user.lastMessage.fileName
-                                                    ? user.lastMessage.fileName.split(".").pop().toUpperCase() + " file"
+                                                {otherUser?.lastMessage?.fileType
+                                                    ? otherUser?.lastMessage?.fileType?.split(".").pop().toUpperCase() + " file"
                                                     : "File"}
                                             </span>
                                         </span>
                                     )
-                                ) : user.lastMessage?.text && user.lastMessage.text.length > 38 ? (
-                                    user.lastMessage.text.slice(0, 38) + "…"
+                                ) : otherUser?.lastMessage?.textSms && otherUser?.lastMessage?.textSms?.length > 38 ? (
+                                    otherUser?.lastMessage?.textSms.slice(0, 38) + "…"
                                 ) : (
-                                    user.lastMessage?.text
+                                    otherUser?.lastMessage?.textSms
                                 )}
                             </p>
                         </div>
@@ -333,81 +339,3 @@ const ChatSidebar = () => {
 };
 
 export default ChatSidebar;
-
-// return (
-//     <div>
-//         {/* Searchbar */}
-//         <div className="relative flex justify-center mt-[2rem] ml-[0.9rem] mr-[0.9rem]">
-//             <AiOutlineSearch
-//                 size={21}
-//                 className="absolute left-[1rem] top-[0.6rem] text-white/40"
-//             />
-//             <input
-//                 type="text"
-//                 value={query}
-//                 placeholder="Search or start a new chat"
-//                 onChange={(e) => {
-//                     setQuery(e.target.value);
-//                     fetchUsers(e.target.value);
-//                 }}
-//                 className="bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:bg-[#4337e6]/10 focus:border-[#4337e6]/70 transition-all pl-[3rem] text-[1rem] w-full h-[2.5rem] rounded-xl"
-//             />
-//         </div>
-//         {/* Searching list */}
-//         <ul className="pt-[1.5rem] px-[0.6rem] pb-[1rem] overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar">
-//             {recentUsers.map((user) => (
-//                 <li
-//                     key={user._id}
-//                     className="flex gap-3 p-3 mt-1 rounded-xl font-mono cursor-pointer hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
-//                     onClick={() => handleSelectUser(user)}>
-//                     <img
-//                         src={user.avatar}
-//                         className="w-[3rem] h-[3rem] rounded-full object-cover border border-white/10"
-//                     />
-//                     <div className="flex flex-col justify-center">
-//                         {/* min-w-0 is important for truncate */}
-//                         <p className="font-bold text-[1rem] pl-[0.5rem] text-white/90">
-//                             {user.fullName}
-//                         </p>
-//                         <p className="text-white/50 text-[0.9rem] truncate w-40 pl-[0.5rem]">
-//                             {user.lastMessage?.fileType ? (
-//                                 user.lastMessage.fileType.startsWith("image/") ? (
-//                                     <>
-//                                         <span role="img" aria-label="image">
-//                                             📷
-//                                         </span>{" "}
-//                                         Photo
-//                                     </>
-//                                 ) : user.lastMessage.fileType.startsWith("video/") ? (
-//                                     <>
-//                                         <span role="img" aria-label="video">
-//                                             🎥
-//                                         </span>{" "}
-//                                         Video
-//                                     </>
-//                                 ) : (
-//                                     <>
-//                                         <span role="img" aria-label="file">
-//                                             📄
-//                                         </span>{" "}
-//                                         {user.lastMessage.fileName
-//                                             ? user.lastMessage.fileName
-//                                                 .split(".")
-//                                                 .pop()
-//                                                 .toUpperCase() + " file"
-//                                             : "File"}
-//                                     </>
-//                                 )
-//                             ) : user.lastMessage?.text &&
-//                                 user.lastMessage.text.length > 40 ? (
-//                                 user.lastMessage.text.slice(0, 40) + "..."
-//                             ) : (
-//                                 user.lastMessage?.text
-//                             )}
-//                         </p>
-//                     </div>
-//                 </li>
-//             ))}
-//         </ul>{" "}
-//     </div>
-// );

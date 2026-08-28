@@ -134,11 +134,11 @@ const GroupChatPage = () => {
       }
     });
 
-    socket.on("updateState", (userId) => {});
+    socket.on("updateState", (userId) => { });
   }, []);
 
   // Handling state online or offline
- useEffect(() => {
+  useEffect(() => {
     const receiverFunction = async () => {
       try {
         console.log("on1");
@@ -447,11 +447,11 @@ const GroupChatPage = () => {
       prevMessages.map((msg) =>
         msg.identifier === identifier
           ? {
-              ...msg,
-              name: "",
-              delIdentifier: "D",
-              message: "This message was deleted by sender",
-            }
+            ...msg,
+            name: "",
+            delIdentifier: "D",
+            message: "This message was deleted by sender",
+          }
           : msg,
       ),
     );
@@ -925,17 +925,15 @@ const GroupChatPage = () => {
                   <div className="flex flex-col items-center p-4 rounded-lg overflow-hidden">
                     {/* Profile Picture Section */}
                     <div
-                      className={`${
-                        isZoomed
+                      className={`${isZoomed
                           ? "fixed bg-black flex justify-center items-center inset-0 z-50 "
                           : "relative w-28 h-28"
-                      }`}>
+                        }`}>
                       <div
-                        className={`${
-                          isZoomed
+                        className={`${isZoomed
                             ? "absolute z-50 left-7 top-7 text-white"
                             : "hidden"
-                        }`}
+                          }`}
                         onClick={() => {
                           setIsZoomed(false);
                         }}>
@@ -1017,11 +1015,10 @@ const GroupChatPage = () => {
       {/* Video Call System */}
       {isVideo && (
         <div
-          className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center transition-all duration-300 ${
-            isFullScreen
+          className={`fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center transition-all duration-300 ${isFullScreen
               ? "w-full h-full"
               : "w-[300px] h-[300px] rounded-lg overflow-hidden"
-          }`}
+            }`}
           onClick={() => setIsFullScreen(!isFullScreen)}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
@@ -1080,13 +1077,11 @@ const GroupChatPage = () => {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex w-full ${
-                  msg.sender === "You" ? "justify-end" : "justify-start"
-                }`}>
+                className={`flex w-full ${msg.sender === "You" ? "justify-end" : "justify-start"
+                  }`}>
                 <div
-                  className={`relative flex flex-col ${
-                    msg.sender === "You" ? "items-end" : "items-start"
-                  }`}
+                  className={`relative flex flex-col ${msg.sender === "You" ? "items-end" : "items-start"
+                    }`}
                   onContextMenu={(e) => openContextMenu(msg, e)}
                   style={{ width: "fit-content", maxWidth: "60%" }}>
                   <div className="flex gap-[0.5rem]">
@@ -1117,11 +1112,10 @@ const GroupChatPage = () => {
                     ) : null}
                     {msg.message && (
                       <div
-                        className={`font-mono bg-[#4337e6] text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words whitespace-pre-line mt-2 block ${
-                          msg.sender === "You"
+                        className={`font-mono bg-[#4337e6] text-white px-3 py-2 rounded-lg min-w-[80px] max-w-full break-words whitespace-pre-line mt-2 block ${msg.sender === "You"
                             ? "bg-[#4337e6]"
                             : "bg-yellow-700"
-                        }`}
+                          }`}
                         style={{
                           wordBreak: "break-word",
                           minWidth: "80px",

@@ -45,20 +45,6 @@ const userSchema = new Schema(
     refreshToken: {
       type: String,
     },
-    otherUsers: [
-      {
-        id: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        fullName: { type: String, required: true },
-        avatar: { type: String },
-        relation: { type: String },
-        about: { typee: String },
-        participantType: { type: String },
-      },
-    ],
   },
   {
     timestamps: true,

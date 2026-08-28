@@ -300,19 +300,56 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-    previousChat: async (data) =>
+
+    lastSms: async (data) =>
         apiRequest(() =>
             api.get(
-                `chat/chatList?userId=${data}`,
-                data
+                `chat/lastSms?userId=${data}`,
             )
+        ),
+
+    previousChat: async (data) =>
+        apiRequest(() =>
+            api.get(`chat/previousChat`,
+                data)
+        )
+}
+
+export const groupAPI = {
+
+    createGroups: async (formdata) =>
+        apiRequest(() =>
+            api.post("/groups/createGroup", formdata
+            )
+        ),
+
+    fetchGroups: async (userId) =>
+        apiRequest(() =>
+            api.get(`/groups/fetchGroups?userId=${userId}`)),
+
+    lastSms: async (data) =>
+        apiRequest(() =>
+            api.get(
+                `chat/lastSms?userId=${data}`,
+            )
+        ),
+
+    previousChat: async (data) =>
+        apiRequest(() =>
+            api.get(`chat/previousChat`,
+                data)
         ),
 }
 
 export const userAPI = {
+
     searchUser: async ({ searchText, userId }) =>
         apiRequest(() =>
             api.get(`/users/searchUser?query=${searchText}&userId=${userId}`)),
+
+    searchGroupUser: async (userId) =>
+        apiRequest(() =>
+            api.get(`/users/searchGroupUser?userId=${userId}`))
 }
 
 export default api;

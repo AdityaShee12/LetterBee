@@ -1,61 +1,45 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { GroupMessage } from "../models/groupMessage.models.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { asyncHandler } from "../../utils/handlers/asyncHandler.js";
+import { Group } from "../../models/group/group.model.js";
+import { uploadOnCloudinary } from "../../utils/storage/cloudinary.js"
 import mongoose from "mongoose";
 
 const createGroup = asyncHandler(async (req, res) => {
-  const {
-    userId,
-    userName,
-    userAvatar,
-    userAbout,
-    groupMembers,
-    groupName,
-    groupAbout,
-  } = req.body;
+
+  const { userId, name, bio, subject, members } = req.body;
+  console.log("LOG", userId, name, bio, subject, members);
 
   const avatarLocalPath = req.files?.groupAvatar[0]?.path;
-  console.log("avatar", avatarLocalPath);
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
+  console.log("Ava", avatar);
 
-  // Creator (Admin)
-  const creatorMember = {
-    id: userId,
-    name: userName,
-    avatar: userAvatar,
-    about: typeof userAbout === "string" ? userAbout : "",
-    role: "admin",
-  };
-  let parsedGroupMembers = groupMembers;
-
-  if (typeof groupMembers === "string") {
-    parsedGroupMembers = JSON.parse(groupMembers);
-  }
-
-  // Other members (Participants)
-  const formattedMembers = parsedGroupMembers.map((member) => ({
-    id: member.id,
-    name: member.fullName,
-    avatar: member.avatar,
-    about: typeof member.about === "string" ? member.about : "",
-    role: "participant",
-  }));
-
-  // Combine creator + members
-  const allMembers = [creatorMember, ...formattedMembers];
-
-  // Create group
-  const group = await GroupMessage.create({
-    creator: userId, // schema field
-    groupName,
-    groupAvatar: avatar?.url || "",
-    groupAbout,
-    groupMembers: allMembers,
-  });
-  console.log("groupcreated", group);
+  const group = await Group.create({
+    name,
+    avatar: avatar.url,
+    members,
+    bio,
+    subject,
+    createdBy: userId,
+  })
 
   res.status(201).json(group);
+});
+
+const fetchGroups = asyncHandler(async (req, res) => {
+
+  try {
+    const { userId } = req.query;
+
+    console.log("groups", userId);
+    const groups = await Group.find(
+      { members: userId }
+    );
+    console.log("groups", groups);
+
+    res.json(groups);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 const groupMessage = asyncHandler(async (req, res) => {
@@ -105,7 +89,31 @@ const groupMessage = asyncHandler(async (req, res) => {
   }
 });
 
+const searchGroup = asyncHandler(async (req, res) => {
+
+  try {
+    const { query, userId } = req.query;
+
+    if (!query) return res.json([]);
+
+    const groups = await Group.find(
+      { name: { $regex: query, $options: "i" } },
+      { _id: { $ne: userId } },
+    );
+
+    let groupData = [];
+
+
+
+    res.json(userData);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export {
   createGroup,
+  fetchGroups,
   groupMessage,
+  searchGroup
 };

@@ -1,10 +1,7 @@
 import { Router } from "express";
-import {
-    groupMessage,
-    createGroup,
-} from "../controllers/user.controller.js";
-import { upload } from "../middlewares/multer.middleware.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { createGroup, fetchGroups, groupMessage } from "../controllers/group/group.controller.js";
+import { upload } from "../middlewares/upload/multer.middleware.js"
+import { verifyJWT } from "../middlewares/auth/auth.middleware.js"
 
 const router = Router();
 
@@ -14,9 +11,11 @@ router.route("/createGroup").post(
             name: "groupAvatar",
             maxCount: 1,
         },
-    ]), verifyJWT,
-    createGroup,
+    ]), createGroup,
 );
+
+router.route("/fetchGroups").get(fetchGroups);
+
 router.route("/groupMessage").get(verifyJWT, groupMessage);
 
 export default router;

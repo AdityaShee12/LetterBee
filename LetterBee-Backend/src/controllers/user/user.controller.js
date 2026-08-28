@@ -245,7 +245,6 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const statusUpload = asyncHandler(async (req, res) => {
   const { userId, userName } = req.body;
-  console.log("Username", userName);
 
   const statusLocalPath = req.files?.status?.[0]?.path;
 

@@ -1,33 +1,61 @@
 import mongoose, { Schema } from "mongoose";
 
-const messageSchema = new mongoose.Schema({
-  users: [
-    {
-      id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-      name: { type: String, required: true },
-      avatar: { type: String },
+const messageSchema = new Schema(
+  {
+    conversationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Conversation",
+      required: true,
+      index: true
     },
-  ],
-  messages: [
-    {
-      sender: {
-        id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      },
-      receiver: {
-        id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      },
-      identifier: { type: String, unique: true },
-      text: { type: String },
-      file: {
-        fileName: { type: String },
-        fileType: { type: String },
-        fileData: { type: String },
-      },
-      sender_delete: { type: Boolean, default: false },
-      receiver_delete: { type: Boolean, default: false },
-      timestamp: { type: Date, default: Date.now }, // Message timestamp
+
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
-  ],
-});
+
+    receiver: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    textSms: {
+      type: String,
+      trim: true
+    },
+
+    file: [
+      {
+        fileName: String,
+        fileType: String,
+        fileData: String,
+      }
+    ],
+
+    identifier: {
+      type: String,
+    },
+
+    sender_deleteForMe: {
+      type: Boolean,
+      default: false
+    },
+
+    sender_deleteForEveryone: {
+      type: Boolean,
+      default: false
+    },
+
+    receiver_delete: {
+      type: Boolean,
+      default: false
+    },
+  },
+  {
+    timestamps: true
+  }
+);
 
 export const Message = mongoose.model("Message", messageSchema);

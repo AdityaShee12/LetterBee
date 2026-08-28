@@ -11,6 +11,7 @@ import authRoutes from "./routes/auth.routes.js"
 import userRouter from "./routes/user.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import chatRoutes from "./routes/chat.routes.js"
+import groupRoutes from "./routes/group.routes.js"
 
 // Configs
 import "./OAuth20.js";
@@ -68,6 +69,7 @@ app.use("/auth", authRoutes);
 app.use("/chat", chatRoutes);
 app.use("/users", userRouter);
 app.use("/api", profileRoutes);
+app.use("/groups", groupRoutes);
 
 // ======================
 // 📦 Static React build (PRODUCTION)
