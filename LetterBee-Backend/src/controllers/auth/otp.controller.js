@@ -4,6 +4,7 @@ import { ApiError } from "../../utils/response/ApiError.js"
 import { User } from "../../models/user/user.model.js";
 import { transporter } from "../../config/mail.config.js"
 import { Otp } from "../../models/auth/otp.model.js";
+import brevo from "../../utils/brevo/brevo.js";
 
 const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
@@ -28,14 +29,26 @@ const sendOtp = asyncHandler(async (req, res) => {
   const otp = generateOTP();
 
   try {
-    // Send OTP email
-    await transporter.sendMail({
-      from: `"LetterBee" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Your OTP Code",
-      html: `
-        <h2>Your OTP is ${otp}</h2>
-        <p>This OTP will expire in 5 minutes.</p>
+    // Send OTP using Brevo API
+    await brevo.transactionalEmails.sendTransacEmail({
+      sender: {
+        name: process.env.BREVO_SENDER_NAME,
+        email: process.env.BREVO_SENDER_EMAIL,
+      },
+
+      to: [
+        {
+          email: email,
+        },
+      ],
+
+      subject: "Your LetterBee OTP Code",
+
+      htmlContent: `
+        <div>
+          <h2>Your OTP is: ${otp}</h2>
+          <p>This OTP will expire in 5 minutes.</p>
+        </div>
       `,
     });
 
@@ -49,17 +62,15 @@ const sendOtp = asyncHandler(async (req, res) => {
       id: OTP._id,
     };
 
-    return res
-      .status(201)
-      .json(
-        new ApiResponse(
-          200,
-          responseData,
-          "Send otp successfully"
-        )
-      );
+    return res.status(201).json(
+      new ApiResponse(
+        200,
+        responseData,
+        "Send otp successfully"
+      )
+    );
   } catch (error) {
-    console.log("OTP sending error:", error);
+    console.error("Brevo OTP Error:", error);
 
     return res.status(500).json({
       message: "Failed to send OTP",
