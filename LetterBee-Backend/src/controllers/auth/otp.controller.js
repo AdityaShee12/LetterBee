@@ -9,10 +9,13 @@ const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
-    return res.status(400).json({ message: "Email is required!" });
+    return res.status(400).json({
+      message: "Email is required!",
+    });
   }
 
   const user = await User.findOne({ email });
+
   if (user) {
     return res.status(400).json({
       message: "This email already has an account",
@@ -24,17 +27,19 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   const otp = generateOTP();
 
-  const mailOptions = {
-    from: `"LetterBee" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your OTP Code",
-    text: `Your OTP is ${otp}.`,
-  };
-
   try {
-    // ✅ IMPORTANT FIX
-    await transporter.sendMail(mailOptions);
+    // Send OTP email
+    await transporter.sendMail({
+      from: `"LetterBee" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your OTP Code",
+      html: `
+        <h2>Your OTP is ${otp}</h2>
+        <p>This OTP will expire in 5 minutes.</p>
+      `,
+    });
 
+    // Save OTP after email is successfully sent
     const OTP = await Otp.create({
       OTP: otp,
       email: email,
@@ -46,10 +51,19 @@ const sendOtp = asyncHandler(async (req, res) => {
 
     return res
       .status(201)
-      .json(new ApiResponse(200, responseData, "Send otp successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          responseData,
+          "Send otp successfully"
+        )
+      );
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Failed to send OTP" });
+    console.log("OTP sending error:", error);
+
+    return res.status(500).json({
+      message: "Failed to send OTP",
+    });
   }
 });
 
