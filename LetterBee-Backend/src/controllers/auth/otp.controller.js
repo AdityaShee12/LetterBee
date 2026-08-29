@@ -2,7 +2,7 @@ import { asyncHandler } from "../../utils/handlers/asyncHandler.js"
 import { ApiResponse } from "../../utils/response/ApiResponse.js";
 import { ApiError } from "../../utils/response/ApiError.js"
 import { User } from "../../models/user/user.model.js";
-import { transporter } from "../../config/mail.config.js"
+// import { transporter } from "../../config/mail.config.js"
 import { Otp } from "../../models/auth/otp.model.js";
 import brevo from "../../utils/brevo/brevo.js";
 
