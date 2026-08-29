@@ -15,7 +15,7 @@ const API_URL =
 const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
-    // timeout: 15000,
+    timeout: 15000,
 });
 
 // Between transfer request from component of Frontend to Backend request comes here. It's the middle positon 
