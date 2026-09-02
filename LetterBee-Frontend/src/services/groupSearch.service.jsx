@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import { groupAPI, userAPI } from "../api/api.js";
 import { AiOutlineSearch } from "react-icons/ai";
+import { setGroupMessage } from "../features/groupMessageSlice.js";
 // import CryptoJS from "crypto-js";
 // import socket from "../sockets/socket.js";
 // // import { groupAPI } from "../api/api";
@@ -11,8 +12,17 @@ import { AiOutlineSearch } from "react-icons/ai";
 
 const GroupSearch = () => {
 
+    const [groupId, setGroupId] = useState("");
     const [userId, setUserId] = useState("");
-    const [fullName, setFullName] = useState("");
+    const [groupDetails, setGroupDetails] = useState(false);
+    const [groupName, setGroupName] = useState("");
+    const [name, setFullName] = useState("");
+    const [groupBio, setGroupBio] = useState("");
+    const [groupSubject, setGroupSubject] = useState("");
+    const [groupAvatar, setGroupAvatar] = useState(null);
+    const [groupMembers, setGroupMembers] = useState([]);
+    const [groupAbout, setGroupAbout] = useState("");
+    const [group, setGroup] = useState();
     const [userName, setUserName] = useState("");
     const [email, setEmail] = useState();
     const [avatar, setAvatar] = useState("");
@@ -30,22 +40,21 @@ const GroupSearch = () => {
     const [chooseMember, setChooseMember] = useState(false);
     const [friends, setFriends] = useState();
     const [selectedMembers, setSelectedMembers] = useState([]);
-    const [groupDetails, setGroupDetails] = useState(false);
-    const [groupName, setGroupName] = useState("");
-    const [groupBio, setGroupBio] = useState("");
-    const [groupSubject, setGroupSubject] = useState("");
-    const [groupAvatar, setGroupAvatar] = useState(null);
 
     useEffect(() => {
         if (!user) return;
-        const { _id, email, fullName, userName, avatar, about } = user;
+        const { _id, fullName, userName, avatar, about } = user;
+        console.log("Users", _id, fullName, userName, avatar, about);
+
         setUserId(_id);
         setAvatar(avatar);
         setFullName(fullName);
-        setEmail(email);
-        setUserName(userName);
         setAbout(about);
     }, [user]);
+
+    useEffect(() => {
+        console.log("UserIDS", userId);
+    }, [userId]);
 
     const fetchGroups = debounce(async (searchText) => {
         if (!searchText.trim() || !userId) {
@@ -133,14 +142,35 @@ const GroupSearch = () => {
     useEffect(() => {
 
         const fetchGroups = async (userId) => {
-            console.log("Work");
+            console.log("UserID", userId);
 
             const groups = await groupAPI.fetchGroups(userId);
             console.log("Works12", groups);
+            setGroup(groups?.data);
         }
 
-        fetchGroups(userId);
+        if (userId) {
+            fetchGroups(userId);
+        }
+
     }, [userId])
+
+    useEffect(() => {
+        console.log("Groupsxc", group);
+    }, [group]);
+
+    const handleSelectGroup = (group) => {
+
+        const groupName = group?.name.replace(/\s+/g, "");
+
+        dispatch(setGroupMessage(group))
+
+        setTimeout(() => {
+            navigate(`/layout/groupChat/${groupName}`);
+        }, 300);
+
+        setQuery("");
+    }
 
     return (
         <div className="font-sans">
@@ -521,80 +551,68 @@ const GroupSearch = () => {
             </div>
 
             {/* Chat list */}
-            <ul
-                className="px-2 pb-4 overflow-y-auto max-h-[calc(100vh-140px)] flex flex-col gap-0.5"
-                style={{ scrollbarWidth: 'none' }}
-            >
-                {recentGroups.map((otherUser) => (
-                    <li
-                        key={otherUser._id}
-                        className="flex gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 relative"
-                        onClick={() => handleSelectUser(otherUser)}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(61,77,183,0.07)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                        }}
-                    >
-                        {/* Avatar */}
-                        <div className="relative flex-shrink-0">
-                            <img
-                                src={otherUser?.otherUser?.avatar}
-                                alt={otherUser?.otherUser?.fullName}
-                                className="w-[44px] h-[44px] rounded-full object-cover"
-                                style={{ border: '2px solid rgba(61,77,183,0.15)' }}
-                            />
-                        </div>
+            {group && (
+                <ul
+                    className="px-2 pb-4 overflow-y-auto max-h-[calc(100vh-140px)] flex flex-col gap-0.5"
+                    style={{ scrollbarWidth: "none" }}
+                >
+                    {group?.map((group) => (
+                        <li
+                            key={group._id}
+                            className="flex gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-200 relative"
+                            onClick={() => handleSelectGroup(group)}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background =
+                                    "rgba(61,77,183,0.07)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                            }}
+                        >
+                            <div className="relative flex-shrink-0">
+                                <img
+                                    src={group?.avatar}
+                                    alt={group?.name}
+                                    className="w-[44px] h-[44px] rounded-full object-cover"
+                                    style={{
+                                        border: "2px solid rgba(61,77,183,0.15)",
+                                    }}
+                                />
+                            </div>
 
-                        {/* Text content */}
-                        <div className="flex flex-col justify-center min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-col justify-center min-w-0 flex-1">
                                 <p className="font-semibold text-[14px] leading-snug truncate text-[#1a1a2e]">
-                                    {otherUser?.otherUser?.fullName}
+                                    {group?.name}
+                                </p>
+
+                                <p className="text-[12.5px] truncate mt-0.5 text-[#9090a8]">
+                                    {group?.lastMessage?.textSms || ""}
                                 </p>
                             </div>
-                            <p className="text-[12.5px] truncate mt-0.5 text-[#9090a8]">
-                                {otherUser?.lastMessage?.fileType ? (
-                                    otherUser?.lastMessage?.fileType.startsWith("image/") ? (
-                                        <span className="flex items-center gap-1">
-                                            <span>📷</span>
-                                            <span>Photo</span>
-                                        </span>
-                                    ) : otherUser?.lastMessage?.fileType.startsWith("video/") ? (
-                                        <span className="flex items-center gap-1">
-                                            <span>🎥</span>
-                                            <span>Video</span>
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-1">
-                                            <span>📄</span>
-                                            <span>
-                                                {otherUser?.lastMessage?.fileType
-                                                    ? otherUser?.lastMessage?.fileType?.split(".").pop().toUpperCase() + " file"
-                                                    : "File"}
-                                            </span>
-                                        </span>
-                                    )
-                                ) : otherUser?.lastMessage?.textSms && otherUser?.lastMessage?.textSms?.length > 38 ? (
-                                    otherUser?.lastMessage?.textSms.slice(0, 38) + "…"
-                                ) : (
-                                    otherUser?.lastMessage?.textSms
-                                )}
-                            </p>
-                        </div>
 
-                        {/* Right chevron */}
-                        <div className="flex items-center flex-shrink-0 self-center">
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <path d="M5 3.5L8.5 7L5 10.5" stroke="rgba(61,77,183,0.25)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </div>
-                    </li>
-                ))}
+                            <div className="flex items-center flex-shrink-0 self-center">
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 14 14"
+                                    fill="none"
+                                >
+                                    <path
+                                        d="M5 3.5L8.5 7L5 10.5"
+                                        stroke="rgba(61,77,183,0.25)"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
 
-                {/* Empty state */}
-                {/* {recentGroups.length === 0 && (
+            {/* Empty state */}
+            {/* {recentGroups.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-[rgba(61,77,183,0.08)]">
                             <AiOutlineSearch size={22} style={{ color: 'rgba(61,77,183,0.4)' }} />
@@ -604,7 +622,6 @@ const GroupSearch = () => {
                         </p>
                     </div>
                 )} */}
-            </ul>
         </div >
     );
 }

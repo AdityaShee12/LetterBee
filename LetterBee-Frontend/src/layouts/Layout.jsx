@@ -364,11 +364,8 @@ const Layout = () => {
                                             color: state === "groupMessage" ? '#3D4DB7' : '#9090a8',
                                             background: state === "groupMessage" ? 'rgba(61,77,183,0.08)' : 'transparent',
                                         }}
-                                        // onClick={() => group()}
-                                        onClick={() => {
-                                            alert("Group messaging feature is coming soon!");
-                                            setState("message");
-                                        }} >
+                                        onClick={() => group()}
+                                    >
                                         {state === "groupMessage" ? (
                                             <MdGroup size={24} />
                                         ) : (
@@ -382,11 +379,8 @@ const Layout = () => {
                                             color: state === "status" ? '#3D4DB7' : '#9090a8',
                                             background: state === "status" ? 'rgba(61,77,183,0.08)' : 'transparent',
                                         }}
-                                        // onClick={statusUpload}
-                                        onClick={() => {
-                                            alert("Status uploading feature is coming soon!");
-                                            setState("message");
-                                        }}>
+                                        onClick={statusUpload}
+                                    >
                                         {state === "status" ? (
                                             <FaCirclePlay size={24} />
                                         ) : (

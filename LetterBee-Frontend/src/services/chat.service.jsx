@@ -1457,7 +1457,6 @@ const ChatService = () => {
       </div>
     </div>
   );
-
 }
 
 export default ChatService;

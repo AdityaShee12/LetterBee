@@ -1,38 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  groupId: "",
-  groupName: "",
-  groupAvatar: "",
-  groupAbout: "",
-  groupMembers: [],
+    groupMessage: null,
 };
 
 const groupMessageSlice = createSlice({
-  name: "groupMessage",
-  initialState,
+    name: "groupMessage",
 
-  reducers: {
-    setGroup: (state, action) => {
-      const {
-        groupId,
-        groupName,
-        groupAvatar,
-        groupAbout,
-        groupMembers,
-      } = action.payload;
+    initialState,
 
-      state.groupId = groupId || "";
-      state.groupName = groupName || "";
-      state.groupAvatar = groupAvatar || "";
-      state.groupAbout = groupAbout || "";
-      state.groupMembers = groupMembers || [];
+    reducers: {
+        setGroupMessage: (state, action) => {
+            state.groupMessage = action.payload;
+        },
+
+        clearGroupMessage: (state) => {
+            state.groupMessage = null;
+        },
     },
-
-    clearGroup: () => initialState,
-  },
 });
 
-export const { setGroup, clearGroup } = groupMessageSlice.actions;
+export const {
+    setGroupMessage,
+    clearGroupMessage,
+} = groupMessageSlice.actions;
 
 export default groupMessageSlice.reducer;

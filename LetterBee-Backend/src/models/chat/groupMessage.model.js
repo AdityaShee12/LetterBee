@@ -2,9 +2,9 @@ import mongoose, { Schema } from "mongoose";
 
 const messageSchema = new Schema(
   {
-    conversationId: {
+    groupId: {
       type: Schema.Types.ObjectId,
-      ref: "Conversation",
+      ref: "Group",
       required: true,
       index: true
     },
@@ -35,6 +35,16 @@ const messageSchema = new Schema(
         fileUrl: String
       }
     ],
+
+    sender_deleteForMe: {
+      type: Boolean,
+      default: false
+    },
+
+    sender_deleteForEveryone: {
+      type: Boolean,
+      default: false
+    },
 
     receiver_delete: [
       {
