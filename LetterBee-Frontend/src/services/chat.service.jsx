@@ -182,22 +182,35 @@ const ChatService = () => {
 
     // Show previous message
     socket.on("receive groupMessage", (data) => {
-      const { senderId, identifier, fileName, fileType, fileData, sms } = data;
 
-      // message decrypt
-      // const message =
-      //   typeof sms === "string" && !sms.startsWith("http")
-      //     ? decryptMessage(sms)
-      //     : sms;
+      const {
+        senderId: messageSenderId,
+        identifier,
+        file,
+        sms
+      } = data;
+
       const message = sms;
+
+      // File information
+      let fileURL = null;
+      let fileName = null;
+      let fileType = null;
 
       if (file?.fileData && file?.fileType) {
         fileURL = `data:${file.fileType};base64,${file.fileData}`;
+
         fileName = file.fileName || null;
         fileType = file.fileType || null;
       }
-      let id, avatar, name;
-      if (senderId === senderId) {
+
+      // Sender information
+      let id = null;
+      let avatar = null;
+      let name = null;
+
+      if (messageSenderId === senderId) {
+
         setMessages((prev) => [
           ...prev,
           {
@@ -206,17 +219,21 @@ const ChatService = () => {
             message,
             fileName,
             fileType,
-            fileURL,
-          },
+            fileURL
+          }
         ]);
+
       } else {
+
         for (const member of groupMembers) {
-          if (senderId === member.id) {
+          if (messageSenderId === member.id) {
             id = member.id;
             avatar = member.avatar;
             name = member.name;
+            break;
           }
         }
+
         setMessages((prev) => [
           ...prev,
           {
@@ -227,8 +244,8 @@ const ChatService = () => {
             message,
             fileName,
             fileType,
-            fileURL,
-          },
+            fileURL
+          }
         ]);
       }
     });

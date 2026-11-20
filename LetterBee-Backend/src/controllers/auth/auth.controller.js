@@ -143,9 +143,21 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+const autoLogin = asyncHandler(async (req, res) => {
+
+    return res.status(200).json({
+        success: true,
+        message: "User authenticated successfully",
+        data: {
+            user: req.user
+        }
+    });
+
+});
+
 const logoutUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
-console.log("UID", _id);
+  console.log("UID", _id);
 
   await User.findByIdAndUpdate(
     _id,
@@ -243,6 +255,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 export {
   registerUser,
   loginUser,
+  autoLogin,
   logoutUser,
   setPassword,
 };

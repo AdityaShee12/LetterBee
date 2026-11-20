@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sendOtp, verifyOtp } from "../controllers/auth/otp.controller.js";
 import { upload } from "../middlewares/upload/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth/auth.middleware.js";
-import { registerUser, loginUser, logoutUser, setPassword } from "../controllers/auth/auth.controller.js";
+import { registerUser, loginUser, autoLogin, logoutUser, setPassword } from "../controllers/auth/auth.controller.js";
 import { refreshAccessToken } from "../controllers/auth/token.controller.js";
 import { validateRegister, validateLogin } from "../utils/validations/validateUser.js";
 
@@ -25,6 +25,7 @@ router.route("/register").post(
   registerUser,
 );
 router.route("/login").post(validateLogin, loginUser);
+router.route("/autoLogin").get(verifyJWT, autoLogin);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/passwordChange").post(verifyJWT, setPassword);
 router.route("/refreshAccessToken").post(refreshAccessToken);

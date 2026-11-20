@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 const userSchema = new Schema(
   {
     googleId: { type: String, required: true, unique: true },
+
     email: {
       type: String,
       required: true,
@@ -13,12 +14,14 @@ const userSchema = new Schema(
       trim: true,
       match: [/\S+@\S+\.\S+/, "Please enter a valid email address"],
     },
+
     fullName: {
       type: String,
       required: true,
       trim: true,
       index: true,
     },
+
     userName: {
       type: String,
       required: true,
@@ -31,17 +34,21 @@ const userSchema = new Schema(
       maxlength: 20,
       match: /^[a-z0-9._]+$/,
     },
+
     avatar: {
       type: String,
     },
+
     about: {
       type: String,
     },
+
     password: {
       type: String,
       unique: true,
       required: true,
     },
+    
     refreshToken: {
       type: String,
     },

@@ -251,6 +251,13 @@ export const authAPI = {
             )
         ),
 
+    autoLogin: async (data) =>
+        apiRequest(() =>
+            api.get(
+                "auth/autoLogin"
+            )
+        ),
+
     logout: async () =>
         apiRequest(() =>
             api.post(

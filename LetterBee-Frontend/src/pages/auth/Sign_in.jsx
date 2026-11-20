@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { loginUser } from "../../services/auth.service.jsx";
+import { authAPI } from "../../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { resetPassword } from "../../services/auth.service.jsx";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useEffect } from "react";
 
 const Sign_in = () => {
   const [signIn, setSignIn] = useState(true);
@@ -103,6 +105,16 @@ const Sign_in = () => {
   const onClose = () => {
     setErrorMessage(false);
   }
+
+  useEffect(() => {
+
+    const autoLogin = async () => {
+
+      const response = await authAPI.autoLogin();
+    };
+
+    autoLogin();
+  }, []);
 
   return (
     <>
