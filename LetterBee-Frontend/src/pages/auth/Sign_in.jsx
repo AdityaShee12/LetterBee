@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loginUser } from "../../services/auth.service.jsx";
+import { loginUser, autoLoginUser } from "../../services/auth.service.jsx";
 import { authAPI } from "../../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -109,8 +109,9 @@ const Sign_in = () => {
   useEffect(() => {
 
     const autoLogin = async () => {
+      const response = await autoLoginUser();
 
-      const response = await authAPI.autoLogin();
+
     };
 
     autoLogin();

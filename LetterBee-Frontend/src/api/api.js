@@ -174,6 +174,7 @@ api.interceptors.response.use(
         if (status !== 401) {
             toast.error(message);
         }
+
         return Promise.reject({
             success: false,
             statusCode: status,
@@ -296,7 +297,7 @@ export const authAPI = {
     profilePicChange: async (data) =>
         apiRequest(() =>
             api.post(
-                "/api/profilePicChange",
+                "/auth/profilePicChange",
                 data
             )
         ),
@@ -304,7 +305,7 @@ export const authAPI = {
     profileAboutChange: async (data) =>
         apiRequest(() =>
             api.post(
-                "/api/profileAboutChange",
+                "/auth/profileAboutChange",
                 data
             )
         ),

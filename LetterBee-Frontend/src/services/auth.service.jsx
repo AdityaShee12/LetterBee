@@ -3,6 +3,7 @@ import { setUser, clearUser } from "../features/userSlice.js";
 
 // Register a new user
 export const registerUser = async (formData, dispatch) => {
+
   const { data } = await authAPI.register(formData);
   console.log("Data", data);
   dispatch(setUser(data));
@@ -11,13 +12,22 @@ export const registerUser = async (formData, dispatch) => {
 
 // Login a user
 export const loginUser = async (credentials, dispatch) => {
+
   const { data } = await authAPI.login(credentials);
   dispatch(setUser(data?.loggedInUser));
   return data;
 };
 
+export const autoLoginUser = async () => {
+
+  const { data } = await authAPI.autoLogin();
+  console.log("Data", data?.user);
+  dispatch(setUser(data?.loggedInUser));
+  return data;
+};
+
 // Logout the user
-export const logoutUser = async (dispatch) => {console.log("swork");
+export const logoutUser = async (dispatch) => {
 
   const { data } = await authAPI.logout();
   dispatch(clearUser());

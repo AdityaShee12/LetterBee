@@ -92,7 +92,9 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
+
   const { email, userName, password } = req.body;
+
   if (!userName && !email) {
     throw new ApiError(400, "username or email is required");
   }
@@ -105,27 +107,34 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     $or: orConditions,
   });
+
   if (!user) {
     throw new ApiError(404, "Account does not exist");
   }
+
   const isPasswordValid = await user.isPasswordCorrect(password);
+
   if (!isPasswordValid) {
     throw new ApiError(401, "Given password is wrong");
   }
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
     user._id,
   );
+
   if (!accessToken || !refreshAccessToken)
     throw new ApiError(400, "Accesstoken and refreshtoken did'nt generate");
+  
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
+
   const options = {
     httpOnly: true,
     secure: false,
     sameSite: "Lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
+
   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
@@ -152,12 +161,11 @@ const autoLogin = asyncHandler(async (req, res) => {
             user: req.user
         }
     });
-
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
+
   const { _id } = req.user;
-  console.log("UID", _id);
 
   await User.findByIdAndUpdate(
     _id,

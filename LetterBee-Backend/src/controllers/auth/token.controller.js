@@ -45,8 +45,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 
     // Generate NEW tokens
-    const { accessToken, refreshToken } =
-      await generateAccessAndRefereshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id);
 
     const options = {
       httpOnly: true,
