@@ -1,4 +1,4 @@
-import { authAPI } from "../api/api.js";
+import { authAPI, userAPI } from "../api/api.js";
 import { setUser, clearUser } from "../features/userSlice.js";
 
 // Register a new user
@@ -18,11 +18,11 @@ export const loginUser = async (credentials, dispatch) => {
   return data;
 };
 
-export const autoLoginUser = async () => {
+export const autoLoginUser = async (dispatch) => {
 
   const { data } = await authAPI.autoLogin();
   console.log("Data", data?.user);
-  dispatch(setUser(data?.loggedInUser));
+  dispatch(setUser(data?.user));
   return data;
 };
 
@@ -36,13 +36,16 @@ export const logoutUser = async (dispatch) => {
 
 //  Reset the password
 export const resetPassword = async (resetData, dispatch) => {
-  const { data } = await authAPI.resetPassword(resetData);
-  dispatch(setUser(data.data));
+
+  const { data } = await userAPI.resetPassword(resetData);
+  console.log("DTA", data);
+  dispatch(setUser(data));
   return data;
 };
 
 // Refresh the access token
 export const refreshAccessToken = async () => {
+
   const { data } = await authAPI.refreshAccessToken();
   return response.data;
 };

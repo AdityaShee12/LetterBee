@@ -1,16 +1,13 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/user.models.js";
-import { Message } from "../models/Message.models.js";
-import { GroupMessage } from "../models/groupMessage.models.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { asyncHandler } from "../../utils/handlers/asyncHandler.js";
+import { ApiError } from "../../utils/response/ApiError.js";
+import { User } from "../../models/user/user.model.js";
+import { ApiResponse } from "../../utils/response/ApiResponse.js";
+import { uploadOnCloudinary } from "../../utils/storage/cloudinary.js";
 import jwt from "jsonwebtoken";
-import { transporter } from "../sendOTP.js";
 import { v4 as uuidv4 } from "uuid";
-import { Status } from "../models/Status.model.js";
 import mongoose from "mongoose";
-import { Otp } from "../models/Otp.models.js";
+import { Otp } from "../../models/auth/otp.model.js";
+import brevo from "../../utils/brevo/brevo.js";
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -32,11 +29,15 @@ const generateAccessAndRefereshTokens = async (userId) => {
 
 const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
+
   if (!email) {
-    return res.status(400).json({ message: "Email is required!" });
+    return res.status(400).json({
+      message: "Email is required!",
+    });
   }
 
   const user = await User.findOne({ email });
+
   if (user) {
     return res.status(400).json({
       message: "This email already has an account",
@@ -48,17 +49,31 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   const otp = generateOTP();
 
-  const mailOptions = {
-    from: `"LetterBee" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your OTP Code",
-    text: `Your OTP is ${otp}.`,
-  };
-
   try {
-    // ✅ IMPORTANT FIX
-    await transporter.sendMail(mailOptions);
+    // Send OTP using Brevo API
+    await brevo.transactionalEmails.sendTransacEmail({
+      sender: {
+        name: process.env.BREVO_SENDER_NAME,
+        email: process.env.BREVO_SENDER_EMAIL,
+      },
 
+      to: [
+        {
+          email: email,
+        },
+      ],
+
+      subject: "Your LetterBee OTP Code",
+
+      htmlContent: `
+        <div>
+          <h2>Your OTP is: ${otp}</h2>
+          <p>This OTP will expire in 5 minutes.</p>
+        </div>
+      `,
+    });
+
+    // Save OTP after email is successfully sent
     const OTP = await Otp.create({
       OTP: otp,
       email: email,
@@ -68,12 +83,19 @@ const sendOtp = asyncHandler(async (req, res) => {
       id: OTP._id,
     };
 
-    return res
-      .status(201)
-      .json(new ApiResponse(200, responseData, "Send otp successfully"));
+    return res.status(201).json(
+      new ApiResponse(
+        200,
+        responseData,
+        "Send otp successfully"
+      )
+    );
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Failed to send OTP" });
+    console.error("Brevo OTP Error:", error);
+
+    return res.status(500).json({
+      message: "Failed to send OTP",
+    });
   }
 });
 
@@ -95,152 +117,31 @@ const verifyOtp = asyncHandler(async (req, res) => {
   }
 });
 
-const registerUser = asyncHandler(async (req, res) => {
+;
 
-  const { fullName, email, userName, password, about } = req.body;
+const setPassword = asyncHandler(async (req, res) => {
+  const { password, email } = req.body;
 
-  if (
-    [fullName, email, userName, password, about].some((field) => field?.trim() === "")
-  ) {
-    throw new ApiError(400, "All fields are required");
-  }
-
-  const existedUser = await User.findOne({
-    $or: [{ userName }, { email }],
-  });
-
-  const passwordRegex =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
-
-  // backend validation
-  if (!passwordRegex.test(password)) {
-
-    return res.status(400).json({
-      message: "Weak Password"
-    });
-  }
-
-  if (existedUser) {
-    throw new ApiError(409, "User with email or username already exists");
-  }
-
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-  const googleId = uuidv4();
-
-  const user = await User.create({
-    googleId,
-    fullName,
-    email,
-    avatar: avatar?.url || "",
-    about,
-    password,
-    userName: userName.toLowerCase(),
-  });
-
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken",
-  );
-
-  if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registering the user");
-  };
-
-  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id,
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-  };
-
-  return res
-    .status(201)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, createdUser, "User registered Successfully"));
-});
-
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, userName, password } = req.body;
-  if (!userName && !email) {
-    throw new ApiError(400, "username or email is required");
-  }
-
-  const orConditions = [];
-
-  if (userName) orConditions.push({ userName });
-  if (email) orConditions.push({ email });
-
-  const user = await User.findOne({
-    $or: orConditions,
-  });
+  const user = await User.findOne({ email });
   if (!user) {
-    throw new ApiError(404, "User does not exist");
+    return res.status(404).json(new ApiResponse(404, null, "User not found"));
   }
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid user credentials");
-  }
-  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id,
-  );
-  if (!accessToken || !refreshAccessToken)
-    throw new ApiError(400, "Accesstoken and refreshtoken did'nt generate");
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken",
-  );
-  const options = {
-    httpOnly: true,
-    secure: false,
-    sameSite: "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  };
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        {
-          loggedInUser,
-          accessToken,
-          refreshToken,
-        },
-        "User logged In Successfully",
-      ),
-    );
-});
 
-const logoutUser = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  await User.findByIdAndUpdate(
-    _id,
-    {
-      $unset: {
-        refreshToken: 1, // this removes the field from document
+  user.password = password; // plain password
+  await user.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        _id: user._id,
+        fullName: user.fullName,
+        avatar: user.avatar,
+        about: user.about,
       },
-    },
-    {
-      new: true,
-    },
+      "Password was changed successfully",
+    ),
   );
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-
-  return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
 const statusUpload = asyncHandler(async (req, res) => {
@@ -320,68 +221,7 @@ const statusShow = asyncHandler(async (req, res) => {
         "User and friends' statuses",
       ),
     );
-});
-
-const setPassword = asyncHandler(async (req, res) => {
-  const { password, email } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(404).json(new ApiResponse(404, null, "User not found"));
-  }
-
-  user.password = password; // plain password
-  await user.save();
-
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        _id: user._id,
-        fullName: user.fullName,
-        avatar: user.avatar,
-        about: user.about,
-      },
-      "Password was changed successfully",
-    ),
-  );
-});
-
-const profilePicChange = asyncHandler(async (req, res) => {
-  const { userId } = req.body;
-  if (!userId) return res.status(400).json({ message: "User ID missing" });
-  const profileData = await User.findById(userId);
-  if (!profileData) throw new ApiError(404, "User not found");
-  // If avatar provided, upload it
-  const avatarLocalPath = req.file?.path;
-  if (avatarLocalPath) {
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-    if (!avatar?.url) throw new ApiError(500, "Avatar upload failed");
-    profileData.avatar = avatar.url;
-  }
-  await profileData.save();
-  return res
-    .status(200)
-    .json(new ApiResponse(200, profileData, "Profile updated successfully"));
-});
-
-const profileAboutChange = asyncHandler(async (req, res) => {
-  const { userId, about } = req.body;
-
-  if (!userId) return res.status(400).json({ message: "User ID missing" });
-
-  const profileData = await User.findById(userId);
-  if (!profileData) throw new ApiError(404, "User not found");
-
-  if (about) {
-    profileData.about = about;
-  }
-
-  await profileData.save();
-  return res
-    .status(200)
-    .json(new ApiResponse(200, profileData, "Profile updated successfully"));
-});
+})
 
 // It is handle fetching users those names are metch with searching query
 const searchUser = asyncHandler(async (req, res) => {

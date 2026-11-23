@@ -1,16 +1,16 @@
 import axios from "axios";
-import { authAPI } from "../api/api";
+import { userAPI } from "../api/api";
 import { debounce } from "lodash";
 import { setUser } from "../features/userSlice";
 
 export const changeProfilePic = async (formData, dispatch) => {
-  const { data } = await authAPI.profilePicChange(formData);
+  const { data } = await userAPI.profilePicChange(formData);
   dispatch(setUser(data));
   return data;
 };
 
 export const changeProfileAbout = async (aboutData, dispatch) => {
-  const { data } = await authAPI.profileAboutChange(aboutData);
+  const { data } = await userAPI.profileAboutChange(aboutData);
   dispatch(setUser(data));
   return data;
 };

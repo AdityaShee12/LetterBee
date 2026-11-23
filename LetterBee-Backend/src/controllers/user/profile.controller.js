@@ -4,6 +4,33 @@ import { User } from "../../models/user/user.model.js";
 import { ApiResponse } from "../../utils/response/ApiResponse.js";
 import { uploadOnCloudinary } from "../../utils/storage/cloudinary.js";
 
+const setPassword = asyncHandler(async (req, res) => {
+  const { password, email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, null, "User not found"));
+  }
+
+  user.password = password; // plain password
+  await user.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        _id: user._id,
+        email: user.email,
+        fullName: user.fullName,
+        userName: user.userName,
+        avatar: user.avatar,
+        about: user.about,
+      },
+      "Password was changed successfully",
+    ),
+  );
+});
+
 const profilePicChange = asyncHandler(async (req, res) => {
   const { userId } = req.body;
   console.log(":PROPicChange");
@@ -42,6 +69,7 @@ const profileAboutChange = asyncHandler(async (req, res) => {
 });
 
 export {
+  setPassword,
   profilePicChange,
   profileAboutChange,
 };

@@ -7,8 +7,7 @@ import { store } from "../app/store";
 //     import.meta.env.VITE_API_URL ||
 //     "https://letterbee-backend.onrender.com";
 
-const API_URL =
-    import.meta.env.VITE_API_URL ||
+const API_URL = import.meta.env.VITE_API_URL ||
     "http://localhost:8000";
 
 // Built-in custom method which use for set Base url, withcredentials, headers etc.
@@ -228,10 +227,18 @@ export const authAPI = {
             )
         ),
 
-    verifyOTP: async (data) =>
+    sendOTPforPassword: async (data) =>
         apiRequest(() =>
             api.post(
-                "auth/verifyOTP",
+                "auth/sendOTPforPassword",
+                data
+            )
+        ),
+
+    verifyOTPforPassword: async (data) =>
+        apiRequest(() =>
+            api.post(
+                "auth/verifyOTPforPassword",
                 data
             )
         ),
@@ -252,10 +259,10 @@ export const authAPI = {
             )
         ),
 
-    autoLogin: async (data) =>
+    autoLogin: async () =>
         apiRequest(() =>
             api.get(
-                "auth/autoLogin"
+                "auth/autoLogin",
             )
         ),
 
@@ -273,42 +280,7 @@ export const authAPI = {
             )
         ),
 
-    getMe: async () =>
-        apiRequest(() =>
-            api.get("/auth/me")
-        ),
 
-    forgotPassword: async (email) =>
-        apiRequest(() =>
-            api.post(
-                "/auth/forgot-password",
-                { email }
-            )
-        ),
-
-    resetPassword: async (data) =>
-        apiRequest(() =>
-            api.post(
-                "/auth/reset-password",
-                data
-            )
-        ),
-
-    profilePicChange: async (data) =>
-        apiRequest(() =>
-            api.post(
-                "/auth/profilePicChange",
-                data
-            )
-        ),
-
-    profileAboutChange: async (data) =>
-        apiRequest(() =>
-            api.post(
-                "/auth/profileAboutChange",
-                data
-            )
-        ),
 };
 
 export const chatAPI = {
@@ -357,11 +329,42 @@ export const userAPI = {
 
     searchUser: async ({ searchText, userId }) =>
         apiRequest(() =>
-            api.get(`/users/searchUser?query=${searchText}&userId=${userId}`)),
+            api.get(`/user/searchUser?query=${searchText}&userId=${userId}`)
+        ),
 
     searchGroupUser: async (userId) =>
         apiRequest(() =>
-            api.get(`/users/searchGroupUser?userId=${userId}`))
+            api.get(`/user/searchGroupUser?userId=${userId}`)
+        ),
+
+    getMe: async () =>
+        apiRequest(() =>
+            api.get("/profile/me")
+        ),
+
+    resetPassword: async (data) =>
+        apiRequest(() =>
+            api.post(
+                "/profile/passwordChange",
+                data
+            )
+        ),
+
+    profilePicChange: async (data) =>
+        apiRequest(() =>
+            api.post(
+                "/profile/profilePicChange",
+                data
+            )
+        ),
+
+    profileAboutChange: async (data) =>
+        apiRequest(() =>
+            api.post(
+                "/profile/profileAboutChange",
+                data
+            )
+        ),
 }
 
 export default api;

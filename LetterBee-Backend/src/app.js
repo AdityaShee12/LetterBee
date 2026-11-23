@@ -67,8 +67,8 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/chat", chatRoutes);
-app.use("/users", userRouter);
-app.use("/api", profileRoutes);
+app.use("/user", userRouter);
+app.use("/profile", profileRoutes);
 app.use("/groups", groupRoutes);
 
 // ======================

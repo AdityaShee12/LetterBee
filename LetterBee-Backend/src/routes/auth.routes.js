@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { sendOtp, verifyOtp } from "../controllers/auth/otp.controller.js";
+import { sendOtp, verifyOtp, sendOTPforPassword, verifyOTPforPassword } from "../controllers/auth/otp.controller.js";
 import { upload } from "../middlewares/upload/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth/auth.middleware.js";
 import { registerUser, loginUser, autoLogin, logoutUser, setPassword } from "../controllers/auth/auth.controller.js";
@@ -10,6 +10,8 @@ const router = Router();
 
 router.route("/sendOTP").post(sendOtp);
 router.route("/verifyOTP").post(verifyOtp);
+router.route("/sendOTPforPassword").post(sendOTPforPassword);
+router.route("/verifyOTPforPassword").post(verifyOTPforPassword);
 router.route("/register").post(
   upload.fields([
     {

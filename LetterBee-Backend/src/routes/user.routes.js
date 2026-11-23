@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   searchUser,
-  // userList,
   friends,
   searchGroupUser
 } from "../controllers/user/friend.controller.js";

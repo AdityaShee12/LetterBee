@@ -1,6 +1,6 @@
 // Show users list algorithm
 // First fetched previous stored chat from database then stored in recentUsers variable and show this recentUsers value on searchlist.
-// If users write any query on searchbar, fetched users based on search query on users variable.
+// If users write any query on searchbar, fetched users based on search query and stored in users variable.
 // Then how many users are there in recentUsers compare those users with users of users variable and how many users wil match, will push
 // to index 0 and if any users will not match with recentUsers variable's user, also push to first of array
 
@@ -113,20 +113,36 @@ const ChatSidebar = () => {
 
     // It is work for make first position of searchable users on userlist
     const searchRecentChat = () => {
+
         setRecentUsers((prevUsers) => {
-            let updatedUsers = [...prevUsers];
+            const updatedUsers = [...prevUsers];
             users.forEach((newUser) => {
+
                 const index = updatedUsers.findIndex(
-                    (user) => user._id === newUser._id,
+                    (user) => user.otherUser?._id === newUser._id
                 );
                 if (index !== -1) {
                     const [matchedUser] = updatedUsers.splice(index, 1);
                     updatedUsers.unshift(matchedUser);
                 } else {
-                    updatedUsers.unshift(newUser);
+                    updatedUsers.unshift({
+                        otherUser: newUser,
+                        lastMessage: null
+                    });
                 }
             });
-            return updatedUsers;
+
+            // Remove duplicate actual users
+            const uniqueUsers = [
+                ...new Map(
+                    updatedUsers.map((user) => [
+                        user.otherUser?._id,
+                        user
+                    ])
+                ).values()
+            ];
+
+            return uniqueUsers;
         });
     };
 
@@ -148,13 +164,17 @@ const ChatSidebar = () => {
 
     // Destructure data of user and assign those data on variable through useState
     useEffect(() => {
-        const { _id, email, fullName, userName, avatar, about } = user;
-        setUserId(_id);
-        setAvatar(avatar);
-        setFullName(fullName);
-        setEmail(email);
-        setUserName(userName);
-        setAbout(about);
+
+        if (user) {
+            const { _id, email, fullName, userName, avatar, about } = user;
+            setUserId(_id);
+            setAvatar(avatar);
+            setFullName(fullName);
+            setEmail(email);
+            setUserName(userName);
+            setAbout(about);
+        }
+
     }, [user]);
 
     // After sending last message userlist update code
@@ -193,13 +213,15 @@ const ChatSidebar = () => {
 
     // This code for show online after online
     useEffect(() => {
-        if (socket.connected) {
-            console.log("Userid", userId);
 
-            socket.emit("new-user-joined", { senderId: userId });
-        } else {
-            socket.connect();
-            socket.emit("new-user-joined", { senderId: userId });
+        if (userId) {
+            if (socket.connected) {
+                console.log("Userid", userId);
+                socket.emit("new-user-joined", { senderId: userId });
+            } else {
+                socket.connect();
+                socket.emit("new-user-joined", { senderId: userId });
+            }
         }
     }, [userId, userName]);
 
