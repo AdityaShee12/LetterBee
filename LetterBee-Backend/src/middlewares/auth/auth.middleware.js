@@ -30,6 +30,13 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     if (!user) {
         throw new ApiError(401, "User not found");
     }
+    if (user.activeSessionId !== decodedToken.activeSessionId) {
+
+        return res.status(401).json({
+            message: "Your account is logged in on another device",
+            code: "SESSION_REPLACED"
+        });
+    }
 
     req.user = user;
 

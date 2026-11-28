@@ -45,12 +45,16 @@ const userSchema = new Schema(
 
     password: {
       type: String,
-      unique: true,
       required: true,
     },
-    
+
     refreshToken: {
       type: String,
+    },
+
+    activeSessionId: {
+      type: String,
+      default: null
     },
   },
   {
@@ -72,13 +76,14 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function (sessionId) {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
-      username: this.username,
+      userName: this.userName,
       fullName: this.fullName,
+      activeSessionId: sessionId,
     },
     process.env.ACCESS_TOKEN_SECRET,
     {

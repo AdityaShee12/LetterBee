@@ -117,8 +117,6 @@ const verifyOtp = asyncHandler(async (req, res) => {
   }
 });
 
-;
-
 const setPassword = asyncHandler(async (req, res) => {
   const { password, email } = req.body;
 

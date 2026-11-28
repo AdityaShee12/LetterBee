@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loginUser, autoLoginUser } from "../../services/auth.service.jsx";
+import { loginUser } from "../../services/auth.service.jsx";
 import { authAPI } from "../../api/api.js";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -96,6 +96,7 @@ const Sign_in = () => {
 
   const passwordMaking = async () => {
     loadingFunc();
+    
     try {
       const response = await resetPassword({ password, email }, dispatch);
       navigate("/layout");
@@ -151,20 +152,7 @@ const Sign_in = () => {
     }
   };
 
-  // Autologin
-  useEffect(() => {
 
-    const autoLogin = async () => {
-
-      const response = await autoLoginUser(dispatch);
-
-      if (response?.user) {
-        navigate("/layout");
-      }
-    };
-
-    autoLogin();
-  }, []);
 
   return (
     <>

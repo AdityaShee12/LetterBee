@@ -1,30 +1,16 @@
 import { asyncHandler } from "../../utils/handlers/asyncHandler.js";
 import { ApiError } from "../../utils/response/ApiError.js";
+import { generateAccessAndRefereshTokens } from "./token.controller.js";
 import { User } from "../../models/user/user.model.js";
 import { ApiResponse } from "../../utils/response/ApiResponse.js";
 import { uploadOnCloudinary } from "../../utils/storage/cloudinary.js";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
-const generateAccessAndRefereshTokens = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
-
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
-    return { accessToken, refreshToken };
-  } catch (error) {
-    throw new ApiError(
-      500,
-      "Something went wrong while generating referesh and access token",
-    );
-  }
-};
-
 const registerUser = asyncHandler(async (req, res) => {
+
   const { fullName, email, userName, password, about } = req.body;
+
   if (
     [fullName, email, userName, password, about].some((field) => field?.trim() === "")
   ) {
@@ -55,8 +41,9 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
   const googleId = uuidv4();
+  const sessionId = uuidv4();
 
-  const user = await User.create({
+  const createdUser = await User.create({
     googleId,
     fullName,
     email,
@@ -64,19 +51,23 @@ const registerUser = asyncHandler(async (req, res) => {
     about,
     password,
     userName: userName.toLowerCase(),
+    activeSessionId: sessionId,
   });
-
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken",
-  );
 
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
   };
 
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id,
+    createdUser, sessionId
   );
+
+  const registeredUser = createdUser.toObject();
+  console.log("RegisteredUser", registeredUser);
+
+  // Remove sensitive fields
+  delete registeredUser.password;
+  delete registeredUser.refreshToken;
 
   const options = {
     httpOnly: true,
@@ -88,7 +79,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, createdUser, "User registered Successfully"));
+    .json(new ApiResponse(200, registeredUser, "User registered Successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -112,21 +103,32 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Account does not exist");
   }
 
+  if (!password) {
+    throw new ApiError(400, "Password is required");
+  }
+
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Given password is wrong");
   }
+
+  // Generate new session ID
+  const sessionId = uuidv4();
+
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
-    user._id,
+    user, sessionId
   );
 
-  if (!accessToken || !refreshAccessToken)
+  if (!accessToken || !refreshToken)
     throw new ApiError(400, "Accesstoken and refreshtoken did'nt generate");
-  
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken",
-  );
+
+  const loggedInUser = user.toObject();
+  console.log("RegisteredUser", loggedInUser);
+
+  // Remove sensitive fields
+  delete loggedInUser.password;
+  delete loggedInUser.refreshToken;
 
   const options = {
     httpOnly: true,
@@ -144,8 +146,6 @@ const loginUser = asyncHandler(async (req, res) => {
         200,
         {
           loggedInUser,
-          accessToken,
-          refreshToken,
         },
         "User logged In Successfully",
       ),
@@ -154,13 +154,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const autoLogin = asyncHandler(async (req, res) => {
 
-    return res.status(200).json({
-        success: true,
-        message: "User authenticated successfully",
-        data: {
-            user: req.user
-        }
-    });
+  return res.status(200).json({
+    success: true,
+    message: "User authenticated successfully",
+    data: {
+      user: req.user
+    }
+  });
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -192,28 +192,56 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const setPassword = asyncHandler(async (req, res) => {
+
   const { password, email } = req.body;
 
   const user = await User.findOne({ email });
+
   if (!user) {
     return res.status(404).json(new ApiResponse(404, null, "User not found"));
   }
 
-  user.password = password; // plain password
-  await user.save();
+  const passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
 
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        _id: user._id,
-        fullName: user.fullName,
-        avatar: user.avatar,
-        about: user.about,
-      },
-      "Password was changed successfully",
-    ),
+  // backend validation
+  if (!passwordRegex.test(password)) {
+
+    return res.status(400).json({
+      message: "Weak Password"
+    });
+  }
+
+  user.password = password; // plain password
+
+  const sessionId = uuidv4();
+
+  const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
+    user, sessionId
   );
+
+  const updatedUser = user.toObject();
+
+  delete updatedUser.password;
+  delete updatedUser.refreshToken;
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        user,
+        "Password was changed successfully",
+      ),
+    );
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {

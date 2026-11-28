@@ -3,31 +3,31 @@ import toast from "react-hot-toast";
 import { store } from "../app/store";
 
 // BASE CONFIG
-// const API_URL =
-//     import.meta.env.VITE_API_URL ||
-//     "https://letterbee-backend.onrender.com";
-
-const API_URL = import.meta.env.VITE_API_URL ||
+const API_URL =
+    import.meta.env.VITE_API_URL ||
     "http://localhost:8000";
 
-// Built-in custom method which use for set Base url, withcredentials, headers etc.
 const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
     timeout: 15000,
 });
 
-// Between transfer request from component of Frontend to Backend request comes here. It's the middle positon 
-// between frontend and Backend
+// ======================================
+// REQUEST INTERCEPTOR
+// ======================================
 api.interceptors.request.use(
     (config) => {
         const state = store.getState();
+
         const accessToken =
             state?.auth?.accessToken;
+
         if (accessToken) {
             config.headers.Authorization =
                 `Bearer ${accessToken}`;
         }
+
         console.log(
             `🚀 ${config.method?.toUpperCase()} ${config.url}`,
             {
@@ -35,6 +35,7 @@ api.interceptors.request.use(
                 params: config.params,
             }
         );
+
         return config;
     },
     (error) => {
@@ -42,18 +43,18 @@ api.interceptors.request.use(
             "❌ Request Interceptor Error:",
             error
         );
+
         return Promise.reject(error);
     }
 );
 
-
+// ======================================
+// TOKEN REFRESH QUEUE
+// ======================================
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (
-    error,
-    token = null
-) => {
+const processQueue = (error, token = null) => {
     failedQueue.forEach((promise) => {
         if (error) {
             promise.reject(error);
@@ -61,39 +62,118 @@ const processQueue = (
             promise.resolve(token);
         }
     });
+
     failedQueue = [];
 };
 
+// ======================================
+// FORCE LOGOUT HANDLER
+// ======================================
+let isForceLoggingOut = false;
+
+const forceLogout = (message) => {
+
+    // Prevent multiple logout executions
+    if (isForceLoggingOut) return;
+
+    isForceLoggingOut = true;
+
+    // Reject all pending requests
+    const sessionError = {
+        success: false,
+        statusCode: 401,
+        message,
+        code: "SESSION_REPLACED",
+    };
+
+    processQueue(sessionError, null);
+
+    // Show notification only once
+    toast.error(message);
+
+    // Redirect to login
+    window.location.replace(
+        "sign_in?reason=session-replaced"
+    );
+};
+
+// ======================================
 // RESPONSE INTERCEPTOR
+// ======================================
 api.interceptors.response.use(
+
+    // SUCCESS RESPONSE
     (response) => {
+
         console.log(
             `✅ ${response.config.method?.toUpperCase()} ${response.config.url}`,
             response.data
         );
+
         return response;
     },
+
+    // ERROR RESPONSE
     async (error) => {
-        const originalRequest =
-            error.config;
-        const status =
-            error.response?.status;
-        const message =
-            error.response?.data?.message ||
+
+        const originalRequest = error.config;
+
+        const status = error.response?.status;
+
+        const responseData = error.response?.data;
+
+        const errorCode = responseData?.message;
+        const errorMessage = responseData?.message ||
             error.message ||
             "Something went wrong!";
+
+        const message =
+            responseData?.message ||
+            error.message ||
+            "Something went wrong!";
+
         console.error(
             `❌ API Error => ${originalRequest?.url}`,
             {
                 status,
-                message,
-                data: error.response?.data,
+                errorMessage, 
+                originalRequest,
             }
         );
+
+        // ==================================
+        // 1. SESSION REPLACED
+        // ==================================
+
+        // IMPORTANT:
+        // Handle this BEFORE normal 401 refresh logic.
+        if (errorMessage === "SESSION_REPLACED") {
+
+            forceLogout(
+                message ||
+                "Your account is logged in on another device. Please login again."
+            );
+
+            return Promise.reject({
+                success: false,
+                statusCode: 401,
+                message,
+                code: "SESSION_REPLACED",
+                data: responseData || null,
+            });
+        }
+
+        // ==================================
+        // 2. NORMAL 401 ACCESS TOKEN REFRESH
+        // ==================================
         if (
             status === 401 &&
+            originalRequest &&
             !originalRequest._retry
         ) {
+
+            // If another request is already refreshing
+            // wait for the new access token.
             if (isRefreshing) {
                 return new Promise(
                     (resolve, reject) => {
@@ -104,65 +184,133 @@ api.interceptors.response.use(
                     }
                 )
                     .then((token) => {
+                        originalRequest.headers =
+                            originalRequest.headers || {};
+
                         originalRequest.headers.Authorization =
                             `Bearer ${token}`;
+
                         return api(originalRequest);
                     })
-                    .catch((err) =>
-                        Promise.reject(err)
-                    );
+                    .catch((err) => {
+                        return Promise.reject(err);
+                    });
             }
+
             originalRequest._retry = true;
+
             isRefreshing = true;
+
             try {
-                const response =
-                    await axios.post(
-                        `${API_URL}/auth/refreshAccessToken`,
-                        {},
-                        {
-                            withCredentials: true,
-                        }
+                // Refresh access token
+                const response = await axios.post(
+                    `${API_URL}/auth/refreshAccessToken`,
+                    {},
+                    {
+                        withCredentials: true,
+                    }
+                );
+
+                // Check refresh response for session replacement
+                if (
+                    response.data?.code ===
+                    "SESSION_REPLACED"
+                ) {
+                    forceLogout(
+                        response.data.message ||
+                        "Your account is logged in on another device. Please login again."
                     );
+
+                    return Promise.reject({
+                        success: false,
+                        statusCode: 401,
+                        message: response.data.message,
+                        code: "SESSION_REPLACED",
+                    });
+                }
+
                 const newAccessToken =
                     response.data?.data?.accessToken;
-                store.dispatch(
-                    setAccessToken(
-                        newAccessToken
-                    )
-                );
+
+                if (!newAccessToken) {
+                    throw new Error(
+                        "New access token not received!"
+                    );
+                }
+
+                // Resolve all queued requests
                 processQueue(
                     null,
                     newAccessToken
                 );
+
+                // Retry original request
+                originalRequest.headers =
+                    originalRequest.headers || {};
+
                 originalRequest.headers.Authorization =
                     `Bearer ${newAccessToken}`;
+
                 return api(originalRequest);
+
             } catch (refreshError) {
+
                 console.error(
                     "❌ Refresh Token Failed:",
                     refreshError
                 );
+
+                // Check SESSION_REPLACED inside refresh error
+                const refreshErrorCode =
+                    refreshError.response?.data?.code ||
+                    refreshError.code;
+
+                const refreshErrorMessage =
+                    refreshError.response?.data?.message;
+
+                if (
+                    refreshErrorCode ===
+                    "SESSION_REPLACED"
+                ) {
+                    forceLogout(
+                        refreshErrorMessage ||
+                        "Your account is logged in on another device. Please login again."
+                    );
+                    return Promise.reject({
+                        success: false,
+                        statusCode: 401,
+                        message: refreshErrorMessage,
+                        code: "SESSION_REPLACED",
+                    });
+                }
+
+                // Reject pending requests
                 processQueue(
                     refreshError,
                     null
                 );
-                store.dispatch(logout());
+
                 toast.error(
                     "Session expired. Please login again."
                 );
-                window.location.href =
-                    "/login";
-                return Promise.reject(
-                    refreshError
-                );
+
+                window.location.replace("sign_in");
+
+                return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
             }
         }
+
+        // ==================================
+        // 3. NETWORK ERROR
+        // ==================================
         if (!error.response) {
+
             toast.error(
                 "Server is not responding!"
             );
+
             return Promise.reject({
                 success: false,
                 statusCode: 500,
@@ -170,6 +318,10 @@ api.interceptors.response.use(
                     "Server is not responding!",
             });
         }
+
+        // ==================================
+        // 4. OTHER API ERRORS
+        // ==================================
         if (status !== 401) {
             toast.error(message);
         }
@@ -178,8 +330,8 @@ api.interceptors.response.use(
             success: false,
             statusCode: status,
             message,
-            data:
-                error.response?.data || null,
+            code: errorCode,
+            data: responseData || null,
         });
     }
 );
@@ -279,8 +431,6 @@ export const authAPI = {
                 "/refreshAccessToken"
             )
         ),
-
-
 };
 
 export const chatAPI = {

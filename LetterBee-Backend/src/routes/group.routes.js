@@ -11,11 +11,17 @@ router.route("/createGroup").post(
             name: "groupAvatar",
             maxCount: 1,
         },
-    ]), createGroup,
+    ]),
+    verifyJWT,
+    createGroup,
 );
-
-router.route("/fetchGroups").get(fetchGroups);
-
-router.route("/groupMessage").get(verifyJWT, groupMessage);
+router.route("/fetchGroups").get(
+    verifyJWT,
+    fetchGroups,
+);
+router.route("/groupMessage").get(
+    verifyJWT,
+    groupMessage
+);
 
 export default router;
